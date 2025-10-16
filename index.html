@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Metatags dinâmicas para SEO -->
+    <title>Portal de Notícias</title>
+    <meta name="description" content="As últimas notícias, atualizadas em tempo real.">
+    <meta name="keywords" content="notícias, atualidades, reportagens, jornalismo">
+    <meta property="og:title" content="Portal de Notícias">
+    <meta property="og:description" content="As últimas notícias, atualizadas em tempo real.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://placehold.co/1200x630/EBF8FF/3182CE?text=Seu+Logo">
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Quill.js Editor -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- jsPDF e jsPDF-AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Estilização base e White Label com variáveis CSS */
+        :root {
+            --primary-color: #3B82F6; /* Azul como cor principal (pode ser trocado para vermelho, verde, etc) */
+            --primary-color-hover: #2563EB;
+            --background-light: #F9FAFB;
+            --text-light-primary: #1F2937;
+            --text-light-secondary: #6B7280;
+            --border-light: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .primary-bg { background-color: var(--primary-color); }
+        .primary-bg-hover:hover { background-color: var(--primary-color-hover); }
+        .primary-text { color: var(--primary-color); }
+        .primary-text-hover:hover { color: var(--primary-color-hover); }
+        .primary-border { border-color: var(--primary-color); }
+        
+        /* Estilo do editor Quill.js */
+        #editor { min-height: 300px; }
+        .ql-editor { font-size: 1rem; }
+        .ql-snow .ql-stroke { stroke: var(--text-light-secondary); }
+        .ql-snow .ql-picker-label { color: var(--text-light-secondary) !important; }
+        .ql-toolbar.ql-snow { border-color: var(--border-light) !important; }
+        .ql-container.ql-snow { border-color: var(--border-light) !important; }
+
+        /* Animações e Transições */
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .slide-in-up { animation: slideInUp 0.5s ease-in-out; }
+        @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Estilo para Toast (Notificações) */
+        #toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .toast {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Estilo customizado para o conteúdo do artigo */
+        .article-body h3 {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .article-body p {
+            font-size: 1.125rem;
+            line-height: 1.75;
+            margin-bottom: 1.5rem;
+        }
+        .article-body hr {
+            border-color: var(--border-light);
+            margin: 3rem 0;
+        }
+        .article-body small {
+            color: var(--text-light-secondary);
+            font-size: 0.875rem;
+        }
+        .article-body .highlight {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        /* Estilo para Vídeos Incorporados (G1) */
+        .article-body iframe.ql-video {
+            display: block;
+            margin: 2rem auto;
+            max-width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .article-body iframe.ql-video + p > em {
+            display: block;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-light-secondary);
+            margin-top: -1rem;
+            margin-bottom: 2rem;
+            font-style: normal;
+        }
+        
+        /* Carousel Hero Banner */
+        #hero-content-wrapper { transition: opacity 0.4s ease-in-out; }
+        .hero-nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .hero-nav-dot:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .hero-nav-dot.active {
+            background-color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 transition-colors duration-300">
+
+    <div id="app" class="min-h-screen">
+        <!-- O conteúdo da aplicação será renderizado aqui -->
+    </div>
+
+    <!-- Container para toasts -->
+    <div id="toast-container"></div>
+
+    <!-- Templates HTML -->
+
+    <!-- Template da Visão Pública -->
+    <template id="public-view-template">
+        <div class="flex flex-col min-h-screen">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-center items-center py-4">
+                        <a href="#" class="flex items-center gap-3 text-3xl font-extrabold primary-text">
+                            <i data-lucide="newspaper" class="h-8 w-8"></i>
+                            <span>Seu Portal</span>
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Conteúdo Principal -->
+            <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Hero Banner -->
+                <div id="hero-banner" class="mb-8 hidden rounded-lg overflow-hidden shadow-lg"></div>
+                
+                <!-- Grid de Notícias -->
+                <h2 class="text-3xl font-bold mb-6 border-l-4 primary-border pl-4">Últimas Notícias</h2>
+                <div id="articles-grid" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    <!-- Cards de notícia serão inseridos aqui -->
+                </div>
+                <div id="loading-spinner" class="text-center py-10">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 primary-border mx-auto"></div>
+                    <p class="mt-4 text-gray-500">Carregando notícias...</p>
+                </div>
+                <p id="no-articles" class="text-center py-10 text-gray-500 hidden">Nenhuma matéria encontrada.</p>
+            </main>
+
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 mt-auto">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-gray-500">
+                    <div class="flex flex-col sm:flex-row justify-between items-center text-center gap-4">
+                        <p>Seu Portal. Todos os direitos reservados.</p>
+                        <div class="flex items-center gap-4">
+                            <a href="#/admin" class="hover:underline">Painel Admin</a>
+                            <span class="hidden sm:inline">|</span>
+                            <span>Desenvolvido por <strong class="font-semibold primary-text">Evereste</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </template>
+
+    <!-- Template da Visão de Artigo Individual -->
+    <template id="article-view-template">
+        <div class="flex flex-col min-h-screen bg-white">
+             <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+                 <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-center items-center py-4">
+                        <a href="#" class="flex items-center gap-3 text-3xl font-extrabold primary-text">
+                            <i data-lucide="newspaper" class="h-8 w-8"></i>
+                            <span>Seu Portal</span>
+                        </a>
+                    </div>
+                 </div>
+            </header>
+            
+            <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="max-w-3xl mx-auto">
+                    <article>
+                        <h1 id="article-title" class="text-3xl md:text-5xl font-extrabold mb-4 text-gray-900"></h1>
+                        <p id="article-subtitle" class="text-lg md:text-xl text-gray-600 mb-6"></p>
+
+                        <div class="border-y border-gray-200 py-4 mb-8">
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-500">
+                                    <p>Por <strong class="text-gray-700">Equipe do Portal</strong></p>
+                                    <p id="article-date-byline"></p>
+                                </div>
+                                <div id="share-buttons" class="flex items-center space-x-1">
+                                    <!-- Botões de compartilhamento -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <figure class="mb-8">
+                            <img id="article-image" src="" alt="" class="w-full h-auto object-cover rounded-lg shadow-lg">
+                            <figcaption id="article-caption" class="text-sm text-gray-500 mt-2 text-center"></figcaption>
+                        </figure>
+
+                        <div id="article-content" class="article-body text-gray-800">
+                            <!-- Conteúdo do artigo (HTML) -->
+                        </div>
+                    </article>
+
+                    <hr class="my-12 border-gray-300">
+
+                    <aside id="related-articles-section">
+                        <h2 class="text-2xl font-bold mb-6">Mais Lidas</h2>
+                        <div id="related-articles-grid" class="space-y-6">
+                            <!-- Cards de matérias relacionadas -->
+                        </div>
+                    </aside>
+                </div>
+            </main>
+
+            <footer class="bg-gray-50 border-t border-gray-200 mt-auto">
+                 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-center text-gray-500">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <p>Seu Portal. Todos os direitos reservados.</p>
+                        <p>Desenvolvido por <strong class="font-semibold primary-text">Evereste</strong></p>
+                    </div>
+                 </div>
+            </footer>
+        </div>
+    </template>
+    
+    <!-- Template do Painel Administrativo -->
+    <template id="admin-view-template">
+        <div class="flex h-screen bg-gray-100">
+            <!-- Sidebar -->
+            <aside class="w-64 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+                <div class="h-16 flex items-center justify-center border-b border-gray-200">
+                    <h1 class="text-xl font-bold primary-text">Painel Admin</h1>
+                </div>
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" data-view="dashboard" class="nav-link flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="layout-dashboard" class="h-5 w-5 mr-3"></i> Dashboard
+                    </a>
+                    <a href="#" data-view="articles" class="nav-link flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="file-text" class="h-5 w-5 mr-3"></i> Matérias
+                    </a>
+                    <a href="#" data-view="editor" class="nav-link flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="plus-square" class="h-5 w-5 mr-3"></i> Nova Matéria
+                    </a>
+                    <a href="#" data-view="guide" class="nav-link flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="book-open" class="h-5 w-5 mr-3"></i> Guia de SEO
+                    </a>
+                </nav>
+                <div class="p-4 border-t border-gray-200">
+                    <div id="db-status" class="flex items-center text-sm mb-4">
+                        <span class="h-3 w-3 rounded-full bg-yellow-400 mr-2"></span>
+                        <span>Conectando...</span>
+                    </div>
+                    <button id="logout-btn" class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white primary-bg primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i data-lucide="log-out" class="h-5 w-5 mr-2"></i> Sair
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Conteúdo do Painel -->
+            <main id="admin-content" class="flex-1 p-6 lg:p-10 overflow-y-auto">
+                <!-- Conteúdo dinâmico do admin -->
+            </main>
+        </div>
+    </template>
+    
+    <!-- Template do Modal de Login -->
+    <template id="login-modal-template">
+        <div id="login-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 fade-in">
+            <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md slide-in-up">
+                <h2 class="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-2">
+                    <i data-lucide="lock" class="primary-text"></i>
+                    <span>Acesso ao Painel</span>
+                </h2>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="email" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+                        <input type="password" id="password" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <p id="login-error" class="text-red-500 text-sm mb-4 text-center hidden"></p>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white primary-bg primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Entrar
+                    </button>
+                </form>
+                 <p class="text-xs text-gray-400 mt-4 text-center">
+                    <a href="#" class="hover:underline">Voltar para o site</a>
+                </p>
+            </div>
+        </div>
+    </template>
+
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot,
+            doc,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            serverTimestamp,
+            query,
+            orderBy,
+            increment,
+            getDoc,
+            getDocs,
+            limit
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // =================================================================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // =================================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6PyScCOniRm4Yova0NVcVjq6nLhsh-qY",
+            authDomain: "seuportal-ca11c.firebaseapp.com",
+            projectId: "seuportal-ca11c",
+            storageBucket: "seuportal-ca11c.appspot.com",
+            messagingSenderId: "95101263713",
+            appId: "1:95101263713:web:e39f1ef302814593d8ef20",
+            measurementId: "G-T18TCZTVKJ"
+        };
+        
+        // =================================================================================
+        // INICIALIZAÇÃO
+        // =================================================================================
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const articlesCollection = collection(db, "articles");
+
+        // Elemento principal da aplicação
+        const appContainer = document.getElementById('app');
+        let currentArticles = [];
+        let quill; // Instância do editor
+        let viewsChart, sharesChart; // Instâncias dos gráficos
+        let currentListenerUnsubscribe = null; // Para limpar listeners em tempo real
+
+        // Carousel Global State
+        let heroCarouselInterval = null;
+        let currentHeroIndex = 0;
+        let heroArticles = [];
+        const HERO_ROTATION_SPEED = 7000; // 7 segundos
+        
+        // =================================================================================
+        // DADOS DE DEMONSTRAÇÃO E SEEDING
+        // =================================================================================
+
+        function getMockArticles() {
+            return [
+                {
+                    title: "EY fatura 30% mais com projetos em inteligência artificial e acelera transformação digital",
+                    subtitle: "Consultoria global aposta em AI para expandir serviços corporativos; divisão de consultoria cresce e novas aplicações internas se multiplicam.",
+                    imageUrl: "https://i.postimg.cc/dtc51yDs/Gemini-Generated-Image-dq8bgedq8bgedq8b.png",
+                    content: `<p>A empresa EY (Ernst & Young), uma das Big Four no setor de auditoria e consultoria, divulgou que sua receita relacionada a serviços de inteligência artificial (IA) cresceu 30% no ano fiscal encerrado em 30 de junho de 2025. Este crescimento é atribuído à crescente demanda por transformações empresariais baseadas em IA, governança de dados e automação de processos. <small>Fonte: Business Insider</small></p><p><span class="highlight">O total de faturamento global da EY no período foi de USD 53,2 bilhões</span>, uma alta de aproximadamente 4% em comparação ao ano anterior. O segmento de consultoria teve um desempenho acima da média do restante da empresa. A divisão de impostos (tax), por exemplo, também apresentou crescimento expressivo. <small>Fonte: Business Insider</small></p><p>A empresa investe mais de US$ 1 bilhão por ano em plataformas de inteligência artificial. Internamente, são mais de 100 aplicações de IA rodando e cerca de 1.000 agentes de IA atuando em tarefas automatizadas. <small>Fonte: Business Insider</small></p><p>Esse foco reflete uma tendência global de busca por eficiência operacional, redução de custos e competitividade, especialmente diante dos avanços rápidos de tecnologias como aprendizado de máquina, modelos generativos e automação cognitiva. <small>Fonte: Business Insider</small></p>`,
+                    isVisible: true,
+                    viewCount: 2109,
+                    shareCount: 123,
+                    shareChannels: { whatsapp: 60, facebook: 35, twitter: 15, linkedin: 11, copy: 2 }
+                },
+                {
+                    title: "Weg assume controle da Tupi Mob e avança em infraestrutura de mobilidade elétrica",
+                    subtitle: "Empresa brasileira amplia atuação no setor de veículos elétricos com investimento de R$ 38 milhões em startup de recarga e gestão de EVs.",
+                    imageUrl: "https://i.postimg.cc/43Rcv6kT/Gemini-Generated-Image-dq8bgedq8bgedq8b-1.png",
+                    content: `<p>A fabricante brasileira Weg anunciou a aquisição de 54% da startup Tupi Mob (Tupinamba Energia), especializada em software de gestão para recarga de veículos elétricos (EV). O valor da negociação foi de R$ 38 milhões (aproximadamente USD 6,99 milhões). <small>Fonte: Reuters</small></p><p>Tupi Mob oferece uma plataforma digital que conecta mais de 370 mil usuários a uma rede de carregadores elétricos. Até o momento, já contabilizou mais de 1,3 milhão de sessões de carregamento, totalizando cerca de 26 GWh de energia fornecida. <small>Fonte: Reuters</small></p><p><span class="highlight">Com essa aquisição, a Weg reforça sua estratégia de liderar a transformação da mobilidade elétrica</span>, ampliando o portfólio para além de motores elétricos, atuando também em soluções que envolvem infraestrutura e gestão digital. A empresa pretende, entre outras ações, fabricar carregadores elétricos localmente para exportação, desenvolvendo também um carregador de 1 megawatt. <small>Fonte: Reuters</small></p><p>A conclusão do negócio ainda depende de aprovação regulatória. Após o anúncio, as ações da Weg tiveram valorização de cerca de 2% na Bolsa de São Paulo, superando o desempenho do índice Bovespa, que se manteve praticamente estável. <small>Fonte: Reuters</small></p>`,
+                    isVisible: true,
+                    viewCount: 1523,
+                    shareCount: 87,
+                    shareChannels: { whatsapp: 45, facebook: 20, twitter: 10, linkedin: 10, copy: 2 }
+                },
+                {
+                    title: "Brasil propõe meta global de aumento de uso de biocombustíveis na conferência climática de Belém",
+                    subtitle: "Documento vazado indica que país pleiteia quadruplemento da produção de combustíveis sustentáveis para combater emissões, mas dividindo opiniões ambientais.",
+                    imageUrl: "https://i.postimg.cc/wTKsY5MW/Gemini-Generated-Image-dq8bgedq8bgedq8b-2.png",
+                    content: `<p>Um documento vazado revela que o Brasil pretende propor, na conferência climática de Belém (novembro de 2025), uma meta para que países aumentem em quatro vezes o uso de combustíveis sustentáveis — incluindo biocombustíveis, biogás e hidrogênio. O objetivo declarado é reduzir a dependência de combustíveis fósseis e contribuir para mitigação das emissões de gases de efeito estufa. <small>Fonte: The Guardian</small></p><p>O Brasil é o segundo maior produtor mundial de etanol, o que lhe confere credibilidade para liderar essa proposta internacional. Porém, <span class="highlight">ambientalistas alertam que o aumento expansivo da produção de biocombustíveis pode acarretar impactos ambientais graves</span>, como desmatamento, perda de biodiversidade, uso excessivo de água e comprometer a segurança alimentar. <small>Fonte: The Guardian</small></p><p>Estudos recentes apontam que alguns biocombustíveis, quando considerados todos os impactos indiretos, podem emitir mais CO₂ do que combustíveis fósseis. Esse é um dos argumentos usados pelos críticos para afirmar que é preciso definir critérios rigorosos para produção e certificação. <small>Fonte: The Guardian</small></p><p>O Itamaraty e o governo brasileiro ressaltam que a proposta global não implicará obrigatoriedade para todos os países, mas sim tratar-se de meta baseada em critérios de sustentabilidade e intensidade de emissão de gases. O documento também indica que combustíveis com alta intensidade de gás carbônico serão excluídos da meta. <small>Fonte: The Guardian</small></p>`,
+                    isVisible: true,
+                    viewCount: 987,
+                    shareCount: 54,
+                    shareChannels: { whatsapp: 30, facebook: 15, twitter: 5, linkedin: 3, copy: 1 }
+                },
+                {
+                    title: "Governo federal avalia incentivos para impulsionar mineração de minerais estratégicos",
+                    subtitle: "Medidas seriam parte da política nacional para elevar cadeia de industrialização e valor agregado de recursos críticos usados em tecnologias verdes.",
+                    imageUrl: "https://i.postimg.cc/T2NCV4kh/Gemini-Generated-Image-dq8bgedq8bgedq8b-3.png",
+                    content: `<p>O governo brasileiro está considerando oferecer garantias financeiras e incentivos fiscais para projetos relacionados à mineração de minerais estratégicos, segundo documentos internos do Conselho Nacional de Política Mineral. <span class="highlight">O objetivo é estimular o processamento e a industrialização desses minerais em território brasileiro</span>, não apenas sua exportação em estado bruto. <small>Fonte: Reuters</small></p><p>Minerais como terras raras, usados em tecnologias avançadas, a cadeia de ímãs, baterias de veículos elétricos, painéis solares e eletrônicos em geral, são alvos centrais dessa política. Apesar de possuir grandes reservas, o Brasil atualmente produz menos de 1% do suprimento global das terras raras. <small>Fonte: Reuters</small></p><p>A iniciativa se alinha ao esforço do governo de fortalecer a participação do Brasil na transição energética mundial, especialmente com a demanda crescente por recursos para as cadeias de energia verde. A industrialização local poderia gerar empregos, aumentar valor agregado interno e reduzir importações. <small>Fonte: Reuters</small></p><p>Discussões diplomáticas recentes indicam que este tema é também estratégico em negociações internacionais, sobretudo com os Estados Unidos. Encontros entre o ministro das Relações Exteriores do Brasil e representantes norte-americanos apontam que minerais estratégicos estão no centro da agenda bilateral. <small>Fonte: Reuters</small></p>`,
+                    isVisible: true,
+                    viewCount: 754,
+                    shareCount: 32,
+                    shareChannels: { whatsapp: 15, facebook: 8, twitter: 4, linkedin: 4, copy: 1 }
+                },
+            ];
+        }
+
+        const seedDatabaseIfEmpty = async () => {
+            const q = query(articlesCollection, limit(1));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                console.log("Banco de dados vazio. Populando com matérias de exemplo...");
+                showToast("Populando o blog com matérias de exemplo...");
+                const mockArticles = getMockArticles();
+                for (const article of mockArticles) {
+                    await addDoc(articlesCollection, {
+                        ...article,
+                        createdAt: serverTimestamp()
+                    });
+                }
+                console.log("Matérias de exemplo adicionadas.");
+            } else {
+                console.log("Banco de dados já contém matérias.");
+            }
+        };
+
+        // =================================================================================
+        // GERENCIAMENTO DE ESTADO E ROTEAMENTO
+        // =================================================================================
+
+        const router = () => {
+            // Limpa o listener anterior antes de mudar de rota para evitar erros
+            if (currentListenerUnsubscribe) {
+                currentListenerUnsubscribe();
+                currentListenerUnsubscribe = null;
+            }
+             if (heroCarouselInterval) clearInterval(heroCarouselInterval);
+            
+            const hash = window.location.hash || '#/';
+            
+            if (hash.startsWith('#/admin')) {
+                if (auth.currentUser) {
+                    renderAdminView();
+                } else {
+                    window.location.hash = '#/';
+                    showLoginModal();
+                }
+            } else if (hash.startsWith('#/article/')) {
+                const articleId = hash.split('/')[2];
+                renderArticleView(articleId);
+            } else {
+                renderPublicView();
+            }
+        };
+        
+        onAuthStateChanged(auth, user => {
+            router();
+        });
+
+        window.addEventListener('hashchange', router);
+        window.addEventListener('DOMContentLoaded', () => {
+            router();
+            lucide.createIcons();
+        });
+        
+        // =================================================================================
+        // RENDERIZAÇÃO DAS VIEWS
+        // =================================================================================
+        
+        const renderPublicView = () => {
+            const template = document.getElementById('public-view-template');
+            appContainer.innerHTML = template.innerHTML;
+            
+            const q = query(articlesCollection, orderBy('createdAt', 'desc'));
+
+            currentListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+                const spinner = document.getElementById('loading-spinner');
+                if (!spinner) return; 
+
+                spinner.style.display = 'none';
+                currentArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const visibleArticles = currentArticles.filter(a => a.isVisible);
+                
+                const noArticlesEl = document.getElementById('no-articles');
+                const heroBannerEl = document.getElementById('hero-banner');
+                const articlesGridEl = document.getElementById('articles-grid');
+
+                if (visibleArticles.length === 0) {
+                    if (noArticlesEl) noArticlesEl.style.display = 'block';
+                    if (heroBannerEl) heroBannerEl.style.display = 'none';
+                    if (articlesGridEl) articlesGridEl.innerHTML = '';
+                } else {
+                    if (noArticlesEl) noArticlesEl.style.display = 'none';
+
+                    if (visibleArticles.length > 1) {
+                        const articlesForHero = visibleArticles.slice(0, 4);
+                        initHeroCarousel(articlesForHero);
+                    } else {
+                        renderHeroBanner(visibleArticles[0]);
+                    }
+                    renderArticlesGrid(visibleArticles);
+                }
+
+                lucide.createIcons();
+            }, (error) => {
+                console.error("Erro ao buscar artigos:", error);
+                showToast("Erro ao carregar notícias.", "error");
+                const spinner = document.getElementById('loading-spinner');
+                if(spinner) spinner.innerHTML = '<p class="text-red-500">Falha ao carregar notícias.</p>';
+            });
+        };
+
+        const renderHeroBanner = (article) => {
+             const heroBanner = document.getElementById('hero-banner');
+             if (!article || !heroBanner) {
+                if(heroBanner) heroBanner.style.display = 'none';
+                return;
+             }
+             heroBanner.style.display = 'block';
+             heroBanner.classList.add('relative', 'h-96');
+             heroBanner.innerHTML = `
+                <a href="#/article/${article.id}" class="block group relative w-full h-full">
+                    <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-all duration-300">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 p-6 md:p-8">
+                        <h2 class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:underline">${article.title}</h2>
+                        <p class="text-white/80 hidden md:block">${article.subtitle}</p>
+                    </div>
+                </a>
+             `;
+        }
+        
+        const renderArticlesGrid = (articles) => {
+            const articlesGrid = document.getElementById('articles-grid');
+            if(articlesGrid) {
+                articlesGrid.innerHTML = articles.map(article => createArticleCard(article)).join('');
+                lucide.createIcons();
+            }
+        };
+
+        const createArticleCard = (article) => {
+            const readTime = calculateReadTime(article.content);
+            return `
+                <a href="#/article/${article.id}" class="flex flex-col group bg-white rounded-lg shadow-md overflow-hidden transform hover:-translate-y-1 transition-all duration-300">
+                    <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-48 object-cover flex-shrink-0">
+                    <div class="p-5 flex flex-col flex-grow">
+                        <h3 class="text-xl font-bold mb-2 group-hover:primary-text">${article.title}</h3>
+                        <p class="text-gray-600 text-sm mb-4 flex-grow">${article.subtitle}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100 mt-auto">
+                            <span class="flex items-center primary-text font-medium"><i data-lucide="clock" class="h-4 w-4 mr-1"></i>${readTime} min de leitura</span>
+                            <div class="flex items-center space-x-3">
+                               <span class="flex items-center text-gray-500"><i data-lucide="eye" class="h-4 w-4 mr-1"></i> ${article.viewCount || 0}</span>
+                               <span class="flex items-center text-gray-500"><i data-lucide="share-2" class="h-4 w-4 mr-1"></i> ${article.shareCount || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            `;
+        };
+        
+        const render404 = () => {
+             appContainer.innerHTML = `<div class="text-center py-20">
+                <h1 class="text-4xl font-bold">404</h1>
+                <p class="text-xl mt-4">Matéria não encontrada.</p>
+                <a href="#" class="mt-8 inline-block px-6 py-3 primary-bg text-white rounded-lg">Voltar ao início</a>
+            </div>`;
+        }
+
+        const renderArticleContent = (article) => {
+            document.title = `${article.title} | Seu Portal`;
+            document.querySelector('meta[name="description"]').setAttribute("content", article.subtitle);
+            document.querySelector('meta[property="og:title"]').setAttribute("content", article.title);
+            document.querySelector('meta[property="og:description"]').setAttribute("content", article.subtitle);
+            document.querySelector('meta[property="og:image"]').setAttribute("content", article.imageUrl);
+
+            const template = document.getElementById('article-view-template');
+            appContainer.innerHTML = template.innerHTML;
+            
+            document.getElementById('article-title').textContent = article.title;
+            document.getElementById('article-subtitle').textContent = article.subtitle;
+            const articleDate = article.createdAt ? new Date(article.createdAt.seconds * 1000) : new Date();
+            document.getElementById('article-date-byline').textContent = `${articleDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} às ${articleDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            
+            document.getElementById('article-image').src = article.imageUrl;
+            document.getElementById('article-image').alt = article.title;
+            document.getElementById('article-caption').textContent = article.subtitle;
+            document.getElementById('article-content').innerHTML = article.content;
+
+            renderShareButtons(article);
+            renderRelatedArticles(article.id);
+            lucide.createIcons();
+        }
+
+        const renderArticleView = async (articleId) => {
+            try {
+                const docRef = doc(db, "articles", articleId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const article = { id: docSnap.id, ...docSnap.data() };
+                    renderArticleContent(article);
+                    if (!sessionStorage.getItem(`viewed_${articleId}`)) {
+                        await updateDoc(docRef, { viewCount: increment(1) });
+                        sessionStorage.setItem(`viewed_${articleId}`, 'true');
+                    }
+                } else {
+                    render404();
+                }
+            } catch (error) {
+                console.error("Erro ao buscar artigo:", error);
+                showToast("Erro ao carregar a matéria.", "error");
+            }
+        };
+        
+        const renderShareButtons = (article) => {
+            const container = document.getElementById('share-buttons');
+            const url = window.location.href;
+            const text = `${article.title} - Leia no Seu Portal`;
+
+            const channels = {
+                whatsapp: { icon: 'message-circle', url: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + " " + url)}` },
+                facebook: { icon: 'facebook', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}` },
+                twitter: { icon: 'twitter', url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}` },
+            };
+
+            let buttonsHTML = '';
+            for (const [key, value] of Object.entries(channels)) {
+                buttonsHTML += `<button data-channel="${key}" class="share-btn p-2 rounded-full text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"><i data-lucide="${value.icon}" class="h-5 w-5"></i></button>`;
+            }
+            buttonsHTML += `<button data-channel="copy" class="share-btn p-2 rounded-full text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"><i data-lucide="link" class="h-5 w-5"></i></button>`;
+            
+            container.innerHTML = buttonsHTML;
+
+            container.querySelectorAll('.share-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const channel = btn.dataset.channel;
+                    if (channel === 'copy') {
+                        navigator.clipboard.writeText(url).then(() => {
+                            showToast("Link copiado!");
+                        });
+                    } else {
+                        window.open(channels[channel].url, '_blank', 'noopener,noreferrer');
+                    }
+                    
+                    const docRef = doc(db, "articles", article.id);
+                    await updateDoc(docRef, {
+                        shareCount: increment(1),
+                        [`shareChannels.${channel}`]: increment(1)
+                    });
+                });
+            });
+            lucide.createIcons();
+        };
+
+        const renderRelatedArticles = (currentArticleId) => {
+            const container = document.getElementById('related-articles-grid');
+            const related = currentArticles
+                .filter(article => article.id !== currentArticleId && article.isVisible)
+                .slice(0, 4); 
+            
+            const relatedSection = document.getElementById('related-articles-section');
+            if (related.length === 0) {
+                if(relatedSection) relatedSection.style.display = 'none';
+                return;
+            }
+
+            if(container) {
+                container.innerHTML = related.map((article, index) => `
+                    <a href="#/article/${article.id}" class="flex items-center group gap-4">
+                        <div class="text-4xl font-bold primary-text">${index + 1}</div>
+                        <img src="${article.imageUrl}" alt="${article.title}" class="w-24 h-20 object-cover rounded-md">
+                        <h3 class="flex-1 text-lg font-semibold text-gray-800 group-hover:text-blue-600">${article.title}</h3>
+                    </a>
+                `).join('');
+            }
+        };
+
+        const renderAdminView = () => {
+            const template = document.getElementById('admin-view-template');
+            appContainer.innerHTML = template.innerHTML;
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('primary-bg', 'text-white'));
+                    e.currentTarget.classList.add('primary-bg', 'text-white');
+                    const view = e.currentTarget.dataset.view;
+                    renderAdminContent(view);
+                });
+            });
+
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+            const dbStatusEl = document.getElementById('db-status');
+            
+            // Listener de status da DB
+            onSnapshot(doc(db, "articles", "non-existent-doc-for-status"), {
+                next: () => { 
+                    if(dbStatusEl) dbStatusEl.innerHTML = `<span class="h-3 w-3 rounded-full bg-green-500 mr-2 animate-pulse"></span><span>Conectado</span>`;
+                },
+                error: () => {
+                    if(dbStatusEl) dbStatusEl.innerHTML = `<span class="h-3 w-3 rounded-full bg-red-500 mr-2"></span><span>Desconectado</span>`;
+                }
+            });
+
+            // Listener para os dados do admin
+            const q = query(articlesCollection, orderBy('createdAt', 'desc'));
+            currentListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+                currentArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const adminContent = document.getElementById('admin-content');
+                if (adminContent && adminContent.dataset.activeView) {
+                    renderAdminContent(adminContent.dataset.activeView);
+                }
+            }, (error) => {
+                console.error("Erro ao carregar dados do admin:", error);
+                showToast("Falha ao carregar dados do painel.", "error");
+            });
+             
+            document.querySelector('.nav-link[data-view="dashboard"]').click();
+            lucide.createIcons();
+        };
+
+        const renderAdminContent = (view) => {
+            const adminContent = document.getElementById('admin-content');
+            adminContent.innerHTML = '<div class="animate-spin rounded-full h-8 w-8 border-b-2 primary-border mx-auto mt-10"></div>'; 
+            adminContent.dataset.activeView = view;
+            
+            setTimeout(() => {
+                // Previne renderização se a view mudou de novo
+                if (adminContent.dataset.activeView !== view) return;
+
+                switch (view) {
+                    case 'dashboard': renderDashboard(); break;
+                    case 'articles': renderArticleList(); break;
+                    case 'editor': renderArticleEditor(); break;
+                    case 'guide': renderSeoGuide(); break;
+                }
+            }, 100);
+        };
+
+        const renderDashboard = () => {
+            const adminContent = document.getElementById('admin-content');
+            adminContent.innerHTML = `
+                <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-semibold mb-4 flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="primary-text h-5 w-5"></i>
+                            <span>Matérias Mais Lidas (Top 5)</span>
+                        </h3>
+                        <canvas id="viewsChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                         <h3 class="font-semibold mb-4 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="primary-text h-5 w-5"></i>
+                            <span>Canais de Compartilhamento</span>
+                        </h3>
+                        <canvas id="sharesChart" class="max-h-64 mx-auto"></canvas>
+                    </div>
+                </div>
+                <div class="mt-8">
+                     <button id="export-pdf-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white primary-bg primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i data-lucide="file-down" class="h-5 w-5 mr-2"></i> Exportar Relatório PDF
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+            document.getElementById('export-pdf-btn').addEventListener('click', exportReportToPdf);
+            
+            const topArticles = [...currentArticles].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 5);
+            const totalShares = { whatsapp: 0, facebook: 0, twitter: 0, linkedin: 0, copy: 0 };
+            currentArticles.forEach(article => {
+                if (article.shareChannels) {
+                    for (const channel in totalShares) {
+                        totalShares[channel] += article.shareChannels[channel] || 0;
+                    }
+                }
+            });
+            
+            createViewsChart(topArticles);
+            createSharesChart(totalShares);
+        };
+
+        const renderArticleList = () => {
+             const adminContent = document.getElementById('admin-content');
+             adminContent.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold">Gerenciar Matérias</h2>
+                    <button id="go-to-editor-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white primary-bg primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i data-lucide="plus" class="h-5 w-5 mr-2"></i> Nova Matéria
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Título</th>
+                                <th scope="col" class="px-6 py-3">Status</th>
+                                <th scope="col" class="px-6 py-3">Data</th>
+                                <th scope="col" class="px-6 py-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articles-table-body">
+                            ${currentArticles.length === 0 ? `<tr><td colspan="4" class="text-center py-10">Nenhuma matéria.</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
+             `;
+             lucide.createIcons();
+             
+             const tableBody = document.getElementById('articles-table-body');
+             tableBody.innerHTML = currentArticles.map(article => `
+                <tr class="bg-white border-b hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium text-gray-900">${article.title}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${article.isVisible ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${article.isVisible ? 'Publicado' : 'Oculto'}</span>
+                    </td>
+                    <td class="px-6 py-4">${article.createdAt ? new Date(article.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A'}</td>
+                    <td class="px-6 py-4 text-center space-x-2">
+                        <button data-id="${article.id}" class="edit-btn p-2 text-blue-500 hover:bg-blue-100 rounded-full"><i data-lucide="edit" class="h-4 w-4"></i></button>
+                        <button data-id="${article.id}" data-visible="${article.isVisible}" class="visibility-btn p-2 text-gray-500 hover:bg-gray-100 rounded-full"><i data-lucide="${article.isVisible ? 'eye-off' : 'eye'}" class="h-4 w-4"></i></button>
+                        <button data-id="${article.id}" class="delete-btn p-2 text-red-500 hover:bg-red-100 rounded-full"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                    </td>
+                </tr>
+             `).join('');
+            
+             lucide.createIcons();
+             
+             document.getElementById('go-to-editor-btn').addEventListener('click', () => {
+                document.querySelector('.nav-link[data-view="editor"]').click();
+             });
+
+             document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                 const id = e.currentTarget.dataset.id;
+                 const articleToEdit = currentArticles.find(a => a.id === id);
+                 document.querySelector('.nav-link[data-view="editor"]').click();
+                 setTimeout(() => renderArticleEditor(articleToEdit), 100);
+             }));
+
+             document.querySelectorAll('.visibility-btn').forEach(btn => btn.addEventListener('click', handleToggleVisibility));
+             document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteArticle));
+        };
+
+        const renderArticleEditor = (article = null) => {
+            const adminContent = document.getElementById('admin-content');
+            adminContent.innerHTML = `
+                <h2 class="text-3xl font-bold mb-6">${article ? 'Editar Matéria' : 'Criar Nova Matéria'}</h2>
+                <form id="article-form" class="space-y-6">
+                    <input type="hidden" id="article-id" value="${article?.id || ''}">
+                    <div>
+                        <label for="title" class="block text-sm font-medium">Título</label>
+                        <input type="text" id="title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" value="${article?.title || ''}">
+                    </div>
+                     <div>
+                        <label for="subtitle" class="block text-sm font-medium">Subtítulo</label>
+                        <input type="text" id="subtitle" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" value="${article?.subtitle || ''}">
+                    </div>
+                     <div>
+                        <label for="imageUrl" class="block text-sm font-medium">URL da Imagem de Capa</label>
+                        <input type="url" id="imageUrl" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" value="${article?.imageUrl || ''}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Conteúdo</label>
+                        <div id="editor-container">
+                            <div id="editor"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="isVisible" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${article?.isVisible ?? true ? 'checked' : ''}>
+                        <label for="isVisible" class="ml-2 block text-sm">Publicar imediatamente</label>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="cancel-edit-btn" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white primary-bg primary-bg-hover">Salvar Matéria</button>
+                    </div>
+                </form>
+            `;
+            
+            const toolbarOptions = [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'header': 1 }, { 'header': 2 }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'script': 'sub'}, { 'script': 'super' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                [{ 'direction': 'rtl' }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'font': [] }],
+                [{ 'align': [] }],
+                ['link', 'image', 'video'],
+                ['clean']
+            ];
+
+            quill = new Quill('#editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: toolbarOptions
+                }
+            });
+
+            if (article) quill.root.innerHTML = article.content;
+            document.getElementById('article-form').addEventListener('submit', handleSaveArticle);
+            document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+                document.querySelector('.nav-link[data-view="articles"]').click();
+            });
+        };
+        
+        const renderSeoGuide = () => {
+             const adminContent = document.getElementById('admin-content');
+             adminContent.innerHTML = `
+                <h2 class="text-3xl font-bold mb-6">Guia de SEO e Redação</h2>
+                <div class="prose max-w-none bg-white p-6 rounded-lg shadow">
+                    <h3>1. Títulos Impactantes</h3>
+                    <p>O título é o elemento mais importante. Use palavras-chave relevantes e tente responder a uma pergunta ou gerar curiosidade. Mantenha-o com menos de 60 caracteres.</p>
+                    
+                    <h3>2. Subtítulos Descritivos</h3>
+                    <p>O subtítulo complementa o título. Ele deve dar mais detalhes sobre o conteúdo da matéria e convencer o leitor a continuar. Use-o para expandir a ideia principal.</p>
+                    
+                    <h3>3. Imagens Otimizadas</h3>
+                    <p>Use imagens de alta qualidade, mas otimizadas para a web (formato .webp é ideal). A URL deve ser funcional e a imagem relevante para o conteúdo.</p>
+                    
+                    <h3>4. Conteúdo de Qualidade</h3>
+                    <ul>
+                        <li><strong>Escaneabilidade:</strong> Use parágrafos curtos, listas (bullet points), e negrito para destacar informações importantes.</li>
+                        <li><strong>Links Internos e Externos:</strong> Adicione links para outras matérias do seu portal (interno) e para fontes confiáveis (externo).</li>
+                        <li><strong>Palavras-chave:</strong> Use a palavra-chave principal no primeiro parágrafo e naturalmente ao longo do texto.</li>
+                    </ul>
+
+                    <h3>5. Estrutura de Cabeçalhos (Headings)</h3>
+                    <p>Use os cabeçalhos do editor (H1, H2, H3) para estruturar o texto. O título da matéria já é o H1. Use H2 para seções principais e H3 para sub-seções.</p>
+                </div>
+             `;
+        };
+
+        const handleSaveArticle = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('article-id').value;
+            const title = document.getElementById('title').value.trim();
+            const subtitle = document.getElementById('subtitle').value.trim();
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const isVisible = document.getElementById('isVisible').checked;
+            const content = quill.root.innerHTML;
+
+            if (!title || !subtitle || !imageUrl || content === '<p><br></p>') {
+                showToast("Preencha todos os campos obrigatórios.", "error");
+                return;
+            }
+
+            const articleData = { title, subtitle, imageUrl, content, isVisible, updatedAt: serverTimestamp() };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "articles", id), articleData);
+                    showToast("Matéria atualizada com sucesso!");
+                } else {
+                    await addDoc(articlesCollection, { ...articleData, createdAt: serverTimestamp(), viewCount: 0, shareCount: 0, shareChannels: { whatsapp: 0, facebook: 0, twitter: 0, linkedin: 0, copy: 0 } });
+                    showToast("Matéria criada com sucesso!");
+                }
+                document.querySelector('.nav-link[data-view="articles"]').click();
+            } catch (error) {
+                console.error("Erro ao salvar matéria:", error);
+                showToast("Erro ao salvar a matéria.", "error");
+            }
+        };
+
+        const handleToggleVisibility = async (e) => {
+            const id = e.currentTarget.dataset.id;
+            const currentVisibility = e.currentTarget.dataset.visible === 'true';
+            
+            try {
+                await updateDoc(doc(db, "articles", id), { isVisible: !currentVisibility });
+                showToast(`Matéria ${currentVisibility ? 'ocultada' : 'publicada'} com sucesso.`);
+            } catch (error) {
+                console.error("Erro ao alterar visibilidade:", error);
+                showToast("Erro ao alterar visibilidade da matéria.", "error");
+            }
+        };
+
+        const handleDeleteArticle = async (e) => {
+            const id = e.currentTarget.dataset.id;
+            // A confirmação foi removida para garantir a funcionalidade em todos os ambientes.
+            try {
+                await deleteDoc(doc(db, "articles", id));
+                showToast("Matéria excluída com sucesso.");
+            } catch (error) {
+                console.error("Erro ao excluir matéria:", error);
+                showToast("Erro ao excluir a matéria.", "error");
+            }
+        };
+
+        const exportReportToPdf = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(18);
+            doc.text("Relatório Completo de Matérias", 14, 22);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
+
+            const tableColumn = ["Título", "Status", "Visualizações", "Compart.", "Data de Criação"];
+            const tableRows = [];
+
+            currentArticles.forEach(article => {
+                const articleData = [
+                    article.title.substring(0, 40) + (article.title.length > 40 ? '...' : ''),
+                    article.isVisible ? 'Publicado' : 'Oculto',
+                    article.viewCount || 0,
+                    article.shareCount || 0,
+                    article.createdAt ? new Date(article.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : 'N/A'
+                ];
+                tableRows.push(articleData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 35,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246] }
+            });
+            
+            doc.save(`relatorio_materias_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast("Relatório PDF gerado!");
+        };
+
+        // =================================================================================
+        // AUTENTICAÇÃO
+        // =================================================================================
+
+        const showLoginModal = () => {
+            if (document.getElementById('login-modal-overlay')) return;
+            const template = document.getElementById('login-modal-template');
+            const modal = document.createElement('div');
+            modal.innerHTML = template.innerHTML;
+            document.body.appendChild(modal);
+
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('login-modal-overlay').addEventListener('click', (e) => {
+                if (e.target.id === 'login-modal-overlay' || e.target.closest('a')) {
+                    modal.remove();
+                }
+            });
+            lucide.createIcons();
+        };
+
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.classList.add('hidden');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                await seedDatabaseIfEmpty(); 
+                const modal = document.querySelector('#login-modal-overlay')?.parentElement;
+                if(modal) modal.remove();
+                window.location.hash = '#/admin';
+            } catch (error) {
+                console.error("Erro de login:", error.code);
+                errorEl.textContent = "Email ou senha inválidos. Tente novamente.";
+                errorEl.classList.remove('hidden');
+            }
+        };
+
+        const handleLogout = async () => {
+            try {
+                await signOut(auth);
+                window.location.hash = '#/';
+                showToast("Você foi desconectado.");
+            } catch (error) {
+                console.error("Erro ao sair:", error);
+                showToast("Ocorreu um erro ao tentar sair.", "error");
+            }
+        };
+
+        // =================================================================================
+        // GRÁFICOS (CHART.JS)
+        // =================================================================================
+        
+        const createViewsChart = (articles) => {
+            const ctx = document.getElementById('viewsChart')?.getContext('2d');
+            if (!ctx) return;
+            
+            if (viewsChart) viewsChart.destroy();
+            
+            viewsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: articles.map(a => a.title.substring(0, 20) + '...'),
+                    datasets: [{
+                        label: 'Visualizações',
+                        data: articles.map(a => a.viewCount || 0),
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        };
+
+        const createSharesChart = (shareData) => {
+            const ctx = document.getElementById('sharesChart')?.getContext('2d');
+            if (!ctx) return;
+
+            if (sharesChart) sharesChart.destroy();
+            
+            sharesChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(shareData).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+                    datasets: [{
+                        label: 'Compartilhamentos',
+                        data: Object.values(shareData),
+                        backgroundColor: ['rgba(34, 197, 94, 0.7)','rgba(59, 89, 152, 0.7)','rgba(29, 161, 242, 0.7)','rgba(0, 119, 181, 0.7)','rgba(156, 163, 175, 0.7)'],
+                        borderColor: '#F9FAFB',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        };
+
+        // =================================================================================
+        // FUNÇÕES DO CAROUSEL
+        // =================================================================================
+        const startCarousel = () => {
+            if (heroCarouselInterval) clearInterval(heroCarouselInterval);
+            heroCarouselInterval = setInterval(() => {
+                currentHeroIndex = (currentHeroIndex + 1) % heroArticles.length;
+                updateHeroBannerContent();
+            }, HERO_ROTATION_SPEED);
+        };
+
+        const stopCarousel = () => {
+            clearInterval(heroCarouselInterval);
+        };
+
+        const updateHeroBannerContent = () => {
+            const article = heroArticles[currentHeroIndex];
+            const wrapper = document.getElementById('hero-content-wrapper');
+            const nav = document.getElementById('hero-nav');
+
+            if (!article || !wrapper || !nav) return;
+
+            wrapper.classList.add('opacity-0');
+
+            setTimeout(() => {
+                wrapper.innerHTML = `
+                    <a href="#/article/${article.id}" class="block group w-full h-full">
+                        <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-all duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                        <div class="absolute bottom-0 left-0 p-6 md:p-8">
+                            <h2 class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:underline">${article.title}</h2>
+                            <p class="text-white/80 hidden md:block">${article.subtitle}</p>
+                        </div>
+                    </a>
+                `;
+                wrapper.classList.remove('opacity-0');
+
+                nav.innerHTML = heroArticles.map((_, index) =>
+                    `<div class="hero-nav-dot ${index === currentHeroIndex ? 'active' : ''}" data-index="${index}"></div>`
+                ).join('');
+
+                nav.querySelectorAll('.hero-nav-dot').forEach(dot => {
+                    dot.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index, 10);
+                        jumpToHeroArticle(index);
+                    });
+                });
+            }, 400);
+        };
+
+        const jumpToHeroArticle = (index) => {
+            if (index === currentHeroIndex) return;
+            currentHeroIndex = index;
+            updateHeroBannerContent();
+            startCarousel(); // Restart interval to reset the timer
+        };
+
+        const initHeroCarousel = (articles) => {
+            heroArticles = articles;
+            const heroBannerContainer = document.getElementById('hero-banner');
+            
+            if (!heroBannerContainer || heroArticles.length <= 1) return;
+            
+            heroBannerContainer.style.display = 'block';
+            heroBannerContainer.classList.add('relative', 'h-96');
+            heroBannerContainer.innerHTML = `
+                <div id="hero-content-wrapper" class="w-full h-full transition-opacity duration-400 ease-in-out"></div>
+                <div id="hero-nav" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10"></div>
+            `;
+
+            currentHeroIndex = 0;
+            updateHeroBannerContent();
+            startCarousel();
+
+            heroBannerContainer.addEventListener('mouseenter', stopCarousel);
+            heroBannerContainer.addEventListener('mouseleave', startCarousel);
+        };
+        // =================================================================================
+        // FUNÇÕES UTILITÁRIAS
+        // =================================================================================
+
+        const calculateReadTime = (content) => {
+            if (!content) return 0;
+            const text = content.replace(/<[^>]+>/g, ''); 
+            const wordsPerMinute = 200;
+            const wordCount = text.trim().split(/\s+/).length;
+            return Math.ceil(wordCount / wordsPerMinute);
+        };
+
+        const showToast = (message, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+
+            toast.className = `toast text-white ${bgColor}`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="h-6 w-6 mr-3"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => { toast.classList.add('show'); }, 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        };
+
+    </script>
+</body>
+</html>
+
