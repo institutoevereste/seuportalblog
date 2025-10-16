@@ -138,23 +138,6 @@
             margin-bottom: 2rem;
             font-style: normal;
         }
-        
-        /* Carousel Hero Banner */
-        #hero-content-wrapper { transition: opacity 0.4s ease-in-out; }
-        .hero-nav-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .hero-nav-dot:hover {
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-        .hero-nav-dot.active {
-            background-color: white;
-        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 transition-colors duration-300">
@@ -185,14 +168,15 @@
 
             <!-- Conteúdo Principal -->
             <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <!-- Hero Banner -->
-                <div id="hero-banner" class="mb-8 hidden rounded-lg overflow-hidden shadow-lg"></div>
+                <!-- Card Principal -->
+                <div id="main-article-container" class="mb-12"></div>
                 
-                <!-- Grid de Notícias -->
-                <h2 class="text-3xl font-bold mb-6 border-l-4 primary-border pl-4">Últimas Notícias</h2>
-                <div id="articles-grid" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    <!-- Cards de notícia serão inseridos aqui -->
+                <!-- Lista de Notícias -->
+                <h2 class="text-2xl font-bold mb-4 border-l-4 primary-border pl-4">Mais Notícias</h2>
+                <div id="article-list-container">
+                    <!-- Títulos das notícias serão inseridos aqui -->
                 </div>
+
                 <div id="loading-spinner" class="text-center py-10">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 primary-border mx-auto"></div>
                     <p class="mt-4 text-gray-500">Carregando notícias...</p>
@@ -402,12 +386,6 @@
         let quill; // Instância do editor
         let viewsChart, sharesChart; // Instâncias dos gráficos
         let currentListenerUnsubscribe = null; // Para limpar listeners em tempo real
-
-        // Carousel Global State
-        let heroCarouselInterval = null;
-        let currentHeroIndex = 0;
-        let heroArticles = [];
-        const HERO_ROTATION_SPEED = 7000; // 7 segundos
         
         // =================================================================================
         // DADOS DE DEMONSTRAÇÃO E SEEDING
@@ -487,7 +465,6 @@
                 currentListenerUnsubscribe();
                 currentListenerUnsubscribe = null;
             }
-             if (heroCarouselInterval) clearInterval(heroCarouselInterval);
             
             const hash = window.location.hash || '#/';
             
@@ -535,23 +512,17 @@
                 const visibleArticles = currentArticles.filter(a => a.isVisible);
                 
                 const noArticlesEl = document.getElementById('no-articles');
-                const heroBannerEl = document.getElementById('hero-banner');
-                const articlesGridEl = document.getElementById('articles-grid');
+                const mainArticleContainer = document.getElementById('main-article-container');
+                const articleListContainer = document.getElementById('article-list-container');
 
                 if (visibleArticles.length === 0) {
                     if (noArticlesEl) noArticlesEl.style.display = 'block';
-                    if (heroBannerEl) heroBannerEl.style.display = 'none';
-                    if (articlesGridEl) articlesGridEl.innerHTML = '';
+                    if (mainArticleContainer) mainArticleContainer.innerHTML = '';
+                    if (articleListContainer) articleListContainer.innerHTML = '';
                 } else {
                     if (noArticlesEl) noArticlesEl.style.display = 'none';
-
-                    if (visibleArticles.length > 1) {
-                        const articlesForHero = visibleArticles.slice(0, 4);
-                        initHeroCarousel(articlesForHero);
-                    } else {
-                        renderHeroBanner(visibleArticles[0]);
-                    }
-                    renderArticlesGrid(visibleArticles);
+                    renderMainArticle(visibleArticles[0]);
+                    renderArticleTitleList(visibleArticles.slice(1));
                 }
 
                 lucide.createIcons();
@@ -563,51 +534,42 @@
             });
         };
 
-        const renderHeroBanner = (article) => {
-             const heroBanner = document.getElementById('hero-banner');
-             if (!article || !heroBanner) {
-                if(heroBanner) heroBanner.style.display = 'none';
-                return;
-             }
-             heroBanner.style.display = 'block';
-             heroBanner.classList.add('relative', 'h-96');
-             heroBanner.innerHTML = `
-                <a href="#/article/${article.id}" class="block group relative w-full h-full">
-                    <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-all duration-300">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                    <div class="absolute bottom-0 left-0 p-6 md:p-8">
-                        <h2 class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:underline">${article.title}</h2>
-                        <p class="text-white/80 hidden md:block">${article.subtitle}</p>
+        const renderMainArticle = (article) => {
+            const container = document.getElementById('main-article-container');
+            if (!container || !article) return;
+            
+            container.innerHTML = `
+                <a href="#/article/${article.id}" class="block group bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-all duration-300">
+                    <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-64 md:h-96 object-cover">
+                    <div class="p-6">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-3 group-hover:primary-text">${article.title}</h2>
+                        <p class="text-gray-600 text-lg">${article.subtitle}</p>
                     </div>
                 </a>
-             `;
-        }
-        
-        const renderArticlesGrid = (articles) => {
-            const articlesGrid = document.getElementById('articles-grid');
-            if(articlesGrid) {
-                articlesGrid.innerHTML = articles.map(article => createArticleCard(article)).join('');
-                lucide.createIcons();
-            }
+            `;
         };
 
-        const createArticleCard = (article) => {
-            const readTime = calculateReadTime(article.content);
-            return `
-                <a href="#/article/${article.id}" class="flex flex-col group bg-white rounded-lg shadow-md overflow-hidden transform hover:-translate-y-1 transition-all duration-300">
-                    <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-48 object-cover flex-shrink-0">
-                    <div class="p-5 flex flex-col flex-grow">
-                        <h3 class="text-xl font-bold mb-2 group-hover:primary-text">${article.title}</h3>
-                        <p class="text-gray-600 text-sm mb-4 flex-grow">${article.subtitle}</p>
-                        <div class="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100 mt-auto">
-                            <span class="flex items-center primary-text font-medium"><i data-lucide="clock" class="h-4 w-4 mr-1"></i>${readTime} min de leitura</span>
-                            <div class="flex items-center space-x-3">
-                               <span class="flex items-center text-gray-500"><i data-lucide="eye" class="h-4 w-4 mr-1"></i> ${article.viewCount || 0}</span>
-                               <span class="flex items-center text-gray-500"><i data-lucide="share-2" class="h-4 w-4 mr-1"></i> ${article.shareCount || 0}</span>
-                            </div>
-                        </div>
-                    </div>
-                </a>
+        const renderArticleTitleList = (articles) => {
+            const container = document.getElementById('article-list-container');
+            if (!container) return;
+
+            if (articles.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg">
+                    <ul class="divide-y divide-gray-200">
+                        ${articles.map(article => `
+                            <li>
+                                <a href="#/article/${article.id}" class="block p-4 group hover:bg-gray-50">
+                                    <h3 class="text-lg font-semibold text-gray-800 group-hover:primary-text">${article.title}</h3>
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
             `;
         };
         
@@ -1185,84 +1147,7 @@
                 }
             });
         };
-
-        // =================================================================================
-        // FUNÇÕES DO CAROUSEL
-        // =================================================================================
-        const startCarousel = () => {
-            if (heroCarouselInterval) clearInterval(heroCarouselInterval);
-            heroCarouselInterval = setInterval(() => {
-                currentHeroIndex = (currentHeroIndex + 1) % heroArticles.length;
-                updateHeroBannerContent();
-            }, HERO_ROTATION_SPEED);
-        };
-
-        const stopCarousel = () => {
-            clearInterval(heroCarouselInterval);
-        };
-
-        const updateHeroBannerContent = () => {
-            const article = heroArticles[currentHeroIndex];
-            const wrapper = document.getElementById('hero-content-wrapper');
-            const nav = document.getElementById('hero-nav');
-
-            if (!article || !wrapper || !nav) return;
-
-            wrapper.classList.add('opacity-0');
-
-            setTimeout(() => {
-                wrapper.innerHTML = `
-                    <a href="#/article/${article.id}" class="block group w-full h-full">
-                        <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-all duration-300">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-0 left-0 p-6 md:p-8">
-                            <h2 class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:underline">${article.title}</h2>
-                            <p class="text-white/80 hidden md:block">${article.subtitle}</p>
-                        </div>
-                    </a>
-                `;
-                wrapper.classList.remove('opacity-0');
-
-                nav.innerHTML = heroArticles.map((_, index) =>
-                    `<div class="hero-nav-dot ${index === currentHeroIndex ? 'active' : ''}" data-index="${index}"></div>`
-                ).join('');
-
-                nav.querySelectorAll('.hero-nav-dot').forEach(dot => {
-                    dot.addEventListener('click', (e) => {
-                        const index = parseInt(e.target.dataset.index, 10);
-                        jumpToHeroArticle(index);
-                    });
-                });
-            }, 400);
-        };
-
-        const jumpToHeroArticle = (index) => {
-            if (index === currentHeroIndex) return;
-            currentHeroIndex = index;
-            updateHeroBannerContent();
-            startCarousel(); // Restart interval to reset the timer
-        };
-
-        const initHeroCarousel = (articles) => {
-            heroArticles = articles;
-            const heroBannerContainer = document.getElementById('hero-banner');
-            
-            if (!heroBannerContainer || heroArticles.length <= 1) return;
-            
-            heroBannerContainer.style.display = 'block';
-            heroBannerContainer.classList.add('relative', 'h-96');
-            heroBannerContainer.innerHTML = `
-                <div id="hero-content-wrapper" class="w-full h-full transition-opacity duration-400 ease-in-out"></div>
-                <div id="hero-nav" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10"></div>
-            `;
-
-            currentHeroIndex = 0;
-            updateHeroBannerContent();
-            startCarousel();
-
-            heroBannerContainer.addEventListener('mouseenter', stopCarousel);
-            heroBannerContainer.addEventListener('mouseleave', startCarousel);
-        };
+        
         // =================================================================================
         // FUNÇÕES UTILITÁRIAS
         // =================================================================================
@@ -1277,6 +1162,7 @@
 
         const showToast = (message, type = 'success') => {
             const container = document.getElementById('toast-container');
+            if (!container) return;
             const toast = document.createElement('div');
             
             const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
