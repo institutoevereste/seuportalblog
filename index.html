@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seu Portal de Notícias</title>
 
+    <!-- ===== Ícone da Aba (Favicon) e Meta Tags para Compartilhamento ===== -->
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/9F7d9T5G/newspaper-icon.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" id="og-type">
+    <meta property="og:url" content="" id="og-url">
+    <meta property="og:title" content="Seu Portal de Notícias" id="og-title">
+    <meta property="og:description" content="As últimas notícias do Brasil e do mundo, com credibilidade." id="og-description">
+    <meta property="og:image" content="https://i.postimg.cc/9F7d9T5G/newspaper-icon.png" id="og-image">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="" id="twitter-url">
+    <meta property="twitter:title" content="Seu Portal de Notícias" id="twitter-title">
+    <meta property="twitter:description" content="As últimas notícias do Brasil e do mundo, com credibilidade." id="twitter-description">
+    <meta property="twitter:image" content="https://i.postimg.cc/9F7d9T5G/newspaper-icon.png" id="twitter-image">
+    <!-- ===== Fim da Seção ===== -->
+
+
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -558,6 +577,13 @@
         const renderHomePage = async () => {
             if (!renderTemplate('home-template', appRoot)) return;
 
+            updateMetaTags(
+                'Seu Portal de Notícias',
+                'As últimas notícias do Brasil e do mundo, com credibilidade.',
+                'https://i.postimg.cc/9F7d9T5G/newspaper-icon.png', // Logo URL
+                 window.location.href.split('#')[0]
+            );
+
             const articlesSnapshot = await getDocs(articlesCollection);
             const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
@@ -634,7 +660,13 @@
             }
             const article = { id: articleSnap.id, ...articleSnap.data() };
 
-            document.title = `${article.title} | Seu Portal`;
+            updateMetaTags(
+                article.title,
+                article.subtitle,
+                article.imageUrl,
+                window.location.href
+            );
+
             document.getElementById('article-title').textContent = article.title;
             document.getElementById('article-subtitle').textContent = article.subtitle;
             document.getElementById('article-author').textContent = `Por ${article.author || 'Redação'}`;
@@ -1149,6 +1181,24 @@
             });
         };
         
+        const updateMetaTags = (title, description, imageUrl, url) => {
+            document.title = title; // Also update the page title itself
+            
+            document.getElementById('og-title')?.setAttribute('content', title);
+            document.getElementById('twitter-title')?.setAttribute('content', title);
+            
+            document.getElementById('og-description')?.setAttribute('content', description);
+            document.getElementById('twitter-description')?.setAttribute('content', description);
+
+            document.getElementById('og-image')?.setAttribute('content', imageUrl);
+            document.getElementById('twitter-image')?.setAttribute('content', imageUrl);
+
+            document.getElementById('og-url')?.setAttribute('content', url);
+            document.getElementById('twitter-url')?.setAttribute('content', url);
+            
+            document.getElementById('og-type')?.setAttribute('content', url.includes('noticia') ? 'article' : 'website');
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('current-year').textContent = new Date().getFullYear();
             onAuthStateChanged(auth, user => { router(); });
