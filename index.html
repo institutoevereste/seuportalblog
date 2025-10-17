@@ -123,6 +123,20 @@
             flex-shrink: 0;
         }
         
+        /* Drag and Drop styles */
+        .kanban-card {
+            cursor: move;
+        }
+        .kanban-card.dragging {
+            opacity: 0.5;
+            background: #e0e7ff;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .kanban-column .drag-over {
+            background-color: #eff6ff;
+            border: 2px dashed #93c5fd;
+        }
+        
         /* Ocultar barra de rolagem padrão no Chrome/Safari/Edge */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
@@ -232,11 +246,22 @@
             </figure>
 
             <div class="p-4 sm:p-6 md:p-8 flex flex-col lg:flex-row gap-8">
-                <!-- Conteúdo e Social Share -->
+                <!-- Conteúdo -->
                 <div class="w-full lg:w-3/4">
                     <div id="article-content" class="ql-editor"></div>
-                    <!-- Seção de Voltar e Compartilhamento (Fim) -->
-                    <div class="mt-8 pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
+                </div>
+
+                <!-- Mais Lidas -->
+                <aside class="w-full lg:w-1/4 lg:pl-6 lg:border-l">
+                    <h3 class="text-xl font-bold mb-4 pb-2 border-b-2 border-blue-500">Mais Lidas</h3>
+                    <div id="most-read-list" class="space-y-4"></div>
+                </aside>
+            </div>
+            
+            <!-- Seção de Voltar e Compartilhamento (Fim) -->
+            <div class="bg-gray-50">
+                <div class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+                    <div class="pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
                         <a href="#/" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold">
                             <i class="fas fa-arrow-left"></i>
                             Voltar para todas as notícias
@@ -247,12 +272,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Mais Lidas -->
-                <aside class="w-full lg:w-1/4 lg:pl-6 lg:border-l">
-                    <h3 class="text-xl font-bold mb-4 pb-2 border-b-2 border-blue-500">Mais Lidas</h3>
-                    <div id="most-read-list" class="space-y-4"></div>
-                </aside>
             </div>
         </div>
     </template>
@@ -293,10 +312,13 @@
                         <i class="fa-solid fa-chart-line w-5 text-center"></i> Dashboard
                     </a>
                     <a href="#/admin/articles" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                        <i class="fa-solid fa-file-alt w-5 text-center"></i> Matérias
+                        <i class="fa-solid fa-file-alt w-5 text-center"></i> Organizar Matérias
                     </a>
                      <a href="#/admin/articles/new" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-700 hover:bg-blue-50 hover:text-blue-600">
                         <i class="fa-solid fa-plus w-5 text-center"></i> Nova Matéria
+                    </a>
+                    <a href="#/admin/featured" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                        <i class="fa-solid fa-star w-5 text-center"></i> Destaques da Home
                     </a>
                     <button id="logout-btn" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-700 hover:bg-red-50 hover:text-red-600 w-full mt-4">
                         <i class="fa-solid fa-sign-out-alt w-5 text-center"></i> Sair
@@ -335,27 +357,65 @@
     <template id="admin-articles-list-template">
          <div class="bg-white p-8 rounded-lg shadow-lg">
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold">Gerenciar Matérias</h1>
-                <a href="#/admin/articles/new" class="bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> Nova Matéria
-                </a>
+                <h1 class="text-3xl font-bold">Organizar Matérias da Home</h1>
+                <div class="flex items-center gap-4">
+                    <button id="save-order-btn" class="bg-green-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center gap-2 hidden">
+                        <i class="fa-solid fa-save"></i> Salvar Ordem
+                    </button>
+                    <a href="#/admin/articles/new" class="bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Nova Matéria
+                    </a>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 border-b">
-                        <tr>
-                            <th class="p-4 font-semibold">Título</th>
-                            <th class="p-4 font-semibold">Status</th>
-                            <th class="p-4 font-semibold">Visualizações</th>
-                            <th class="p-4 font-semibold">Data</th>
-                            <th class="p-4 font-semibold text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="articles-table-body">
-                        <!-- Linhas da tabela serão inseridas aqui -->
-                    </tbody>
-                </table>
+            <p class="text-gray-600 mb-6">Arraste as matérias entre as colunas para definir onde elas aparecerão na página inicial. As matérias em "Feed Principal" são as maiores, e as de "Assuntos em Alta" ficam na barra lateral.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Coluna Feed Principal -->
+                <div class="kanban-column">
+                    <h2 class="text-lg font-bold text-center bg-gray-200 p-3 rounded-t-lg">Feed Principal</h2>
+                    <div id="main-feed-list" class="kanban-list bg-gray-50 p-4 rounded-b-lg min-h-[400px] space-y-3 overflow-y-auto max-h-[600px]"></div>
+                </div>
+                <!-- Coluna Barra Lateral -->
+                 <div class="kanban-column">
+                    <h2 class="text-lg font-bold text-center bg-gray-200 p-3 rounded-t-lg">Assuntos em Alta (Lateral)</h2>
+                    <div id="sidebar-list" class="kanban-list bg-gray-50 p-4 rounded-b-lg min-h-[400px] space-y-3 overflow-y-auto max-h-[600px]"></div>
+                </div>
+                <!-- Coluna Não Atribuídas -->
+                 <div class="kanban-column">
+                    <h2 class="text-lg font-bold text-center bg-gray-200 p-3 rounded-t-lg">Matérias Não Atribuídas</h2>
+                    <div id="unassigned-list" class="kanban-list bg-gray-50 p-4 rounded-b-lg min-h-[400px] space-y-3 overflow-y-auto max-h-[600px]"></div>
+                </div>
             </div>
+        </div>
+    </template>
+    
+    <template id="admin-featured-settings-template">
+        <div class="bg-white p-8 rounded-lg shadow-lg">
+            <h1 class="text-3xl font-bold mb-6">Gerenciar Destaques da Página Inicial</h1>
+            <form id="featured-form">
+                <div class="space-y-8">
+                    <!-- Matéria Principal -->
+                    <div>
+                        <label for="main-article-select" class="block text-lg font-bold text-gray-800 mb-2">Matéria Principal em Destaque</label>
+                        <p class="text-sm text-gray-500 mb-2">Escolha qual matéria será a principal na página inicial.</p>
+                        <select id="main-article-select" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+
+                    <!-- Matérias Relacionadas -->
+                    <div>
+                        <label class="block text-lg font-bold text-gray-800 mb-2">Matérias Relacionadas</label>
+                         <p class="text-sm text-gray-500 mb-2">Escolha as 5 matérias que aparecerão como tópicos abaixo da principal.</p>
+                        <div id="related-articles-container" class="space-y-4">
+                            <!-- Selects serão injetados aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="bg-blue-500 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+                        Salvar Destaques
+                    </button>
+                </div>
+            </form>
         </div>
     </template>
 
@@ -388,9 +448,19 @@
                         Para adicionar vídeos, use o botão de vídeo <i class="fa-solid fa-video mx-1"></i> na barra de ferramentas. A inserção de imagens diretamente no corpo do texto não é suportada; use o campo "URL da Imagem de Destaque" acima para a imagem principal da matéria.
                     </p>
                 </div>
-                <div class="flex justify-end gap-4">
-                    <a href="#/admin/articles" class="bg-gray-200 text-gray-800 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancelar</a>
-                    <button type="submit" class="bg-blue-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-600 transition-colors">Salvar Matéria</button>
+                <div class="flex justify-between items-center">
+                    <div>
+                         <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" id="publish-status" class="sr-only peer">
+                          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          <span class="ml-3 text-sm font-medium text-gray-900">Publicar Matéria</span>
+                        </label>
+                    </div>
+                    <div class="flex gap-4">
+                        <button type="button" id="delete-btn" class="text-red-600 hover:text-red-800 font-semibold hidden">Excluir</button>
+                        <a href="#/admin/articles" class="bg-gray-200 text-gray-800 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancelar</a>
+                        <button type="submit" class="bg-blue-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-600 transition-colors">Salvar Matéria</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -414,13 +484,13 @@
             updateDoc,
             deleteDoc,
             doc,
+            setDoc,
             query,
             orderBy,
             limit,
             serverTimestamp,
             writeBatch,
-            increment,
-            where
+            increment
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // --- CONFIGURAÇÃO FIREBASE (OBRIGATÓRIA) ---
@@ -487,66 +557,75 @@
         
         const renderHomePage = async () => {
             if (!renderTemplate('home-template', appRoot)) return;
+
+            const articlesSnapshot = await getDocs(articlesCollection);
+            const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
-            const snapshot = await getDocs(articlesCollection);
-            let allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // 1. Busca Destaques
+            const settingsSnap = await getDoc(doc(db, 'settings', 'homepage'));
+            let featuredArticle = null;
+            let relatedArticles = [];
+            let featuredIds = new Set();
 
-            allArticles.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            if (settingsSnap.exists() && settingsSnap.data().featuredArticleId) {
+                const settings = settingsSnap.data();
+                featuredArticle = allArticles.find(a => a.id === settings.featuredArticleId);
+                relatedArticles = (settings.relatedArticleIds || []).map(id => allArticles.find(a => a.id === id)).filter(Boolean);
+                featuredIds = new Set([settings.featuredArticleId, ...(settings.relatedArticleIds || [])]);
+            } else {
+                 // Fallback se não houver destaques definidos
+                let publishedArticles = allArticles.filter(a => a.published).sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                if (publishedArticles.length > 0) {
+                    featuredArticle = publishedArticles.shift();
+                    relatedArticles = publishedArticles.splice(0, 5);
+                    featuredIds = new Set([featuredArticle.id, ...relatedArticles.map(a => a.id)]);
+                }
+            }
+            const mainBlockPlaceholder = document.getElementById('main-block-placeholder');
+            if (featuredArticle) mainBlockPlaceholder.innerHTML = createNewMainArticleHTML(featuredArticle, relatedArticles);
+            
+            // 2. Busca Ordem do Feed
+            const orderSnap = await getDoc(doc(db, 'settings', 'homepageOrder'));
+            let mainFeedArticles = [];
+            let sidebarArticles = [];
 
-            let articles = allArticles.filter(article => article.published);
-
-            if (articles.length === 0) {
-                appRoot.innerHTML = `<p class="text-center text-gray-500 py-10">Nenhuma notícia publicada no momento.</p>`;
-                return;
+            if (orderSnap.exists()) {
+                const orderSettings = orderSnap.data();
+                mainFeedArticles = (orderSettings.mainFeedOrder || []).map(id => allArticles.find(a => a.id === id)).filter(a => a && a.published && !featuredIds.has(a.id));
+                sidebarArticles = (orderSettings.sidebarOrder || []).map(id => allArticles.find(a => a.id === id)).filter(a => a && a.published && !featuredIds.has(a.id));
+            } else {
+                // Fallback se a ordem não estiver definida
+                let remainingArticles = allArticles.filter(a => a.published && !featuredIds.has(a.id)).sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                sidebarArticles = remainingArticles.splice(0, 4);
+                mainFeedArticles = remainingArticles;
             }
 
-            const mainBlockPlaceholder = document.getElementById('main-block-placeholder');
+            // 3. Renderiza o Feed
             const feedContainer = document.getElementById('feed-container-placeholder');
             feedContainer.innerHTML = '';
-
-            const mainArticle = articles.shift();
-            const secondaryHeadlines = articles.splice(0, 5);
-            if (mainArticle) {
-                mainBlockPlaceholder.innerHTML = createNewMainArticleHTML(mainArticle, secondaryHeadlines);
-            }
-
             const mainColumn = document.createElement('div');
             mainColumn.className = 'lg:col-span-2 space-y-8';
-
             const sidebarColumn = document.createElement('aside');
             sidebarColumn.className = 'lg:col-span-1 space-y-6 self-start lg:sticky lg:top-24';
             
-            const sidebarArticles = articles.splice(0, 4); 
-
-            while (articles.length > 0) {
-                const primary = articles.shift();
-                const secondary = articles.shift(); 
-                const feedBlock = createFeedBlockHTML(primary, secondary);
-                mainColumn.innerHTML += feedBlock;
+            while (mainFeedArticles.length > 0) {
+                mainColumn.innerHTML += createFeedBlockHTML(mainFeedArticles.shift(), mainFeedArticles.shift());
             }
-
             if (sidebarArticles.length > 0) {
                 sidebarColumn.innerHTML += '<h2 class="text-xl font-bold border-b-2 border-blue-500 pb-2">Assuntos em Alta</h2>';
-                sidebarArticles.forEach(article => {
-                    sidebarColumn.innerHTML += createSidebarArticleHTML(article);
-                });
+                sidebarArticles.forEach(article => sidebarColumn.innerHTML += createSidebarArticleHTML(article));
             }
-
+            
             feedContainer.appendChild(mainColumn);
             feedContainer.appendChild(sidebarColumn);
         };
         
         const renderArticlePage = async (id) => {
-            if (!id) {
-                location.hash = '#/';
-                return;
-            }
+            if (!id) { location.hash = '#/'; return; }
             if (!renderTemplate('article-template', appRoot)) return;
 
             const articleRef = doc(db, 'articles', id);
-            
             await updateDoc(articleRef, { views: increment(1) }).catch(console.error);
-            
             const articleSnap = await getDoc(articleRef);
 
             if (!articleSnap.exists()) {
@@ -570,8 +649,7 @@
             const textContent = tempDiv.textContent || tempDiv.innerText || "";
             const wordCount = textContent.trim().split(/\s+/).length;
             const readingTime = Math.ceil(wordCount / 225);
-            const readingTimeElement = document.getElementById('reading-time').querySelector('span');
-            readingTimeElement.textContent = `${readingTime} min de leitura`;
+            document.getElementById('reading-time').querySelector('span').textContent = `${readingTime} min de leitura`;
 
             renderShareButtons(article, 'share-buttons-top');
             renderShareButtons(article, 'share-buttons-bottom');
@@ -580,15 +658,12 @@
 
         const renderMostReadList = async (currentArticleId) => {
             const snapshot = await getDocs(articlesCollection);
-            let allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+            const allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const mostRead = allArticles
                 .sort((a, b) => (b.views || 0) - (a.views || 0))
                 .filter(article => article.id !== currentArticleId && article.published)
                 .slice(0, 5);
-
-            const listElement = document.getElementById('most-read-list');
-            listElement.innerHTML = mostRead.map(article => `
+            document.getElementById('most-read-list').innerHTML = mostRead.map(article => `
                 <a href="#/noticia/${article.id}" class="block group">
                     <p class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${article.title}</p>
                     <p class="text-sm text-gray-500">${article.subtitle}</p>
@@ -599,7 +674,6 @@
         const renderShareButtons = (article, containerId) => {
             const container = document.getElementById(containerId);
             if (!container) return;
-
             const url = encodeURIComponent(window.location.href);
             const title = encodeURIComponent(article.title);
             const shareButtons = {
@@ -608,141 +682,120 @@
                 'X': { icon: 'fa-x-twitter', color: 'bg-black', url: `https://twitter.com/intent/tweet?url=${url}&text=${title}`},
                 'E-mail': { icon: 'fa-envelope', color: 'bg-gray-500', url: `mailto:?subject=${title}&body=Confira esta matéria:%20${url}`},
             };
-
             const iconSizeClass = containerId === 'share-buttons-top' ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-lg';
-
-            let buttonsHTML = Object.entries(shareButtons).map(([name, data]) => `
-                <a href="${data.url}" target="_blank" rel="noopener noreferrer" title="Compartilhar no ${name}" class="rounded-full ${data.color} text-white flex items-center justify-center hover:opacity-80 transition-opacity ${iconSizeClass}">
-                    <i class="fab ${data.icon}"></i>
-                </a>
-            `).join('');
-
-            buttonsHTML += `
-                <button title="Copiar link" class="copy-link-btn rounded-full bg-blue-500 text-white flex items-center justify-center hover:opacity-80 transition-opacity ${iconSizeClass}">
-                    <i class="fas fa-link"></i>
-                </button>
-            `;
-            
+            let buttonsHTML = Object.entries(shareButtons).map(([name, data]) => `<a href="${data.url}" target="_blank" rel="noopener noreferrer" title="Compartilhar no ${name}" class="rounded-full ${data.color} text-white flex items-center justify-center hover:opacity-80 transition-opacity ${iconSizeClass}"><i class="fab ${data.icon}"></i></a>`).join('');
+            buttonsHTML += `<button title="Copiar link" class="copy-link-btn rounded-full bg-blue-500 text-white flex items-center justify-center hover:opacity-80 transition-opacity ${iconSizeClass}"><i class="fas fa-link"></i></button>`;
             container.innerHTML = buttonsHTML;
-
-            container.querySelectorAll('.copy-link-btn').forEach(btn => {
-                btn.addEventListener('click', copyArticleLink);
-            });
+            container.querySelectorAll('.copy-link-btn').forEach(btn => btn.addEventListener('click', copyArticleLink));
         };
 
         const handleAdminRouting = async (page, action) => {
             const user = auth.currentUser;
             if (!user) {
                 if (!renderTemplate('login-template', appRoot)) return;
-                const loginForm = document.getElementById('login-form');
-                loginForm.addEventListener('submit', handleLogin);
+                document.getElementById('login-form').addEventListener('submit', handleLogin);
                 return;
             }
-
             if (!renderTemplate('admin-template', appRoot)) return;
             const adminContent = document.getElementById('admin-content');
-            
             document.getElementById('logout-btn').addEventListener('click', handleLogout);
             updateAdminNavActiveState(`#/admin/${page}`);
 
-            if (page === 'articles' && action === 'new') {
-                await renderArticleEditor();
-            } else if (page === 'articles' && action) {
-                await renderArticleEditor(action);
-            } else if (page === 'articles') {
-                await renderAdminArticlesList(adminContent);
-            } else {
-                await renderAdminDashboard(adminContent);
-            }
+            if (page === 'articles' && action === 'new') await renderArticleEditor();
+            else if (page === 'articles' && action) await renderArticleEditor(action);
+            else if (page === 'articles') await renderAdminArticlesList(adminContent);
+            else if (page === 'featured') await renderFeaturedSettingsPage(adminContent);
+            else await renderAdminDashboard(adminContent);
         };
 
         const renderAdminDashboard = async (container) => {
             if (!renderTemplate('admin-dashboard-template', container)) return;
-            
             const snapshot = await getDocs(articlesCollection);
             const articles = snapshot.docs.map(doc => doc.data()).sort((a,b) => (b.views || 0) - (a.views || 0));
-
             Object.values(charts).forEach(chart => chart.destroy());
-
-            const mostReadCtx = document.getElementById('most-read-chart').getContext('2d');
-            charts.mostRead = new Chart(mostReadCtx, {
-                type: 'bar',
-                data: {
-                    labels: articles.slice(0, 7).map(a => a.title.substring(0,20)+'...'),
-                    datasets: [{
-                        label: 'Visualizações',
-                        data: articles.slice(0, 7).map(a => a.views || 0),
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: { responsive: true, indexAxis: 'y' }
-            });
-
-            const shareChannelsCtx = document.getElementById('share-channels-chart').getContext('2d');
-            charts.shareChannels = new Chart(shareChannelsCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['WhatsApp', 'Facebook', 'Twitter', 'LinkedIn', 'Outros'],
-                    datasets: [{
-                        data: [120, 80, 50, 30, 20],
-                        backgroundColor: ['#25D366', '#1877F2', '#1DA1F2', '#0A66C2', '#6B7280']
-                    }]
-                },
-                options: { responsive: true }
-            });
-            
+            charts.mostRead = new Chart(document.getElementById('most-read-chart').getContext('2d'), { type: 'bar', data: { labels: articles.slice(0, 7).map(a => a.title.substring(0,20)+'...'), datasets: [{ label: 'Visualizações', data: articles.slice(0, 7).map(a => a.views || 0), backgroundColor: 'rgba(59, 130, 246, 0.7)' }] }, options: { responsive: true, indexAxis: 'y' } });
+            charts.shareChannels = new Chart(document.getElementById('share-channels-chart').getContext('2d'), { type: 'pie', data: { labels: ['WhatsApp', 'Facebook', 'Twitter', 'E-mail', 'Outros'], datasets: [{ data: [120, 80, 50, 30, 20], backgroundColor: ['#25D366', '#1877F2', '#000000', '#6B7280', '#9CA3AF'] }] }, options: { responsive: true } });
             document.getElementById('export-pdf-btn').addEventListener('click', () => exportArticlesToPDF(articles));
         };
 
         const renderAdminArticlesList = async (container) => {
             if (!renderTemplate('admin-articles-list-template', container)) return;
             
-            const snapshot = await getDocs(articlesCollection);
-            const articles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            const articlesSnapshot = await getDocs(articlesCollection);
+            const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            const tableBody = document.getElementById('articles-table-body');
-            if (articles.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center p-6 text-gray-500">Nenhuma matéria encontrada.</td></tr>`;
-                return;
+            const orderSnap = await getDoc(doc(db, 'settings', 'homepageOrder'));
+            const mainFeedOrder = orderSnap.exists() ? orderSnap.data().mainFeedOrder || [] : [];
+            const sidebarOrder = orderSnap.exists() ? orderSnap.data().sidebarOrder || [] : [];
+            
+            const assignedIds = new Set([...mainFeedOrder, ...sidebarOrder]);
+
+            const mainFeedList = document.getElementById('main-feed-list');
+            const sidebarList = document.getElementById('sidebar-list');
+            const unassignedList = document.getElementById('unassigned-list');
+
+            mainFeedList.innerHTML = '';
+            sidebarList.innerHTML = '';
+            unassignedList.innerHTML = '';
+
+            const createArticleCard = (article) => {
+                return `
+                <div class="kanban-card bg-white p-3 rounded-lg shadow border flex justify-between items-center" draggable="true" data-id="${article.id}">
+                    <span class="font-medium text-sm">${article.title}</span>
+                    <div class="flex items-center gap-2 text-gray-400">
+                        <a href="#/admin/articles/${article.id}" class="hover:text-blue-600" title="Editar"><i class="fas fa-edit"></i></a>
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                </div>`;
+            };
+
+            mainFeedOrder.forEach(id => {
+                const article = allArticles.find(a => a.id === id);
+                if (article) mainFeedList.innerHTML += createArticleCard(article);
+            });
+            sidebarOrder.forEach(id => {
+                const article = allArticles.find(a => a.id === id);
+                if (article) sidebarList.innerHTML += createArticleCard(article);
+            });
+            allArticles.forEach(article => {
+                if (!assignedIds.has(article.id)) unassignedList.innerHTML += createArticleCard(article);
+            });
+            
+            document.getElementById('save-order-btn').addEventListener('click', saveHomepageOrder);
+            enableKanbanDragAndDrop();
+        };
+
+        const renderFeaturedSettingsPage = async (container) => {
+            if (!renderTemplate('admin-featured-settings-template', container)) return;
+            const articlesSnapshot = await getDocs(articlesCollection);
+            const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(a => a.published).sort((a, b) => a.title.localeCompare(b.title));
+            const optionsHTML = allArticles.map(a => `<option value="${a.id}">${a.title}</option>`).join('');
+            const mainSelect = document.getElementById('main-article-select');
+            mainSelect.innerHTML = `<option value="">-- Selecione uma matéria --</option>${optionsHTML}`;
+            const relatedContainer = document.getElementById('related-articles-container');
+            relatedContainer.innerHTML = Array.from({length: 5}, (_, i) => `
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tópico Relacionado #${i + 1}</label>
+                    <select class="related-article-select w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">-- Selecione a ${i + 1}ª matéria --</option>${optionsHTML}
+                    </select>
+                </div>`).join('');
+            const settingsSnap = await getDoc(doc(db, 'settings', 'homepage'));
+            if (settingsSnap.exists()) {
+                const settings = settingsSnap.data();
+                if (settings.featuredArticleId) mainSelect.value = settings.featuredArticleId;
+                if (settings.relatedArticleIds) {
+                    const relatedSelects = relatedContainer.querySelectorAll('select');
+                    settings.relatedArticleIds.forEach((id, index) => { if (relatedSelects[index]) relatedSelects[index].value = id; });
+                }
             }
-
-            tableBody.innerHTML = articles.map(article => `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-4 font-medium">${article.title}</td>
-                    <td class="p-4">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" ${article.published ? 'checked' : ''} class="sr-only peer" data-id="${article.id}">
-                          <div class="publish-toggle w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </td>
-                    <td class="p-4">${article.views || 0}</td>
-                    <td class="p-4 text-sm text-gray-600">${formatDate(article.createdAt)}</td>
-                    <td class="p-4 text-right">
-                        <a href="#/admin/articles/${article.id}" class="text-blue-600 hover:text-blue-800 p-2"><i class="fas fa-edit"></i></a>
-                        <button class="delete-btn text-red-600 hover:text-red-800 p-2" data-id="${article.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-
-            tableBody.querySelectorAll('.publish-toggle').forEach(toggle => {
-                toggle.previousElementSibling.addEventListener('change', (e) => {
-                    togglePublishStatus(e.target.dataset.id, e.target.checked);
-                });
-            });
-            tableBody.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    deleteArticle(e.currentTarget.dataset.id);
-                });
-            });
+            document.getElementById('featured-form').addEventListener('submit', handleSaveFeaturedSettings);
         };
         
         const renderArticleEditor = async (id = null) => {
             const adminContent = document.getElementById('admin-content');
             if (!renderTemplate('admin-article-editor-template', adminContent)) return;
-            
             const editorTitle = document.getElementById('editor-title');
             const form = document.getElementById('article-form');
             const articleIdField = document.getElementById('article-id');
@@ -750,38 +803,29 @@
             const subtitleField = document.getElementById('subtitle');
             const imageUrlField = document.getElementById('image-url');
             const authorField = document.getElementById('author');
-
-            const toolbarOptions = [
-                [{ 'header': [1, 2, 3, false] }],
-                [{ 'font': [] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'color': [] }, { 'background': [] }],
-                [{ 'align': [] }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'script': 'sub'}, { 'script': 'super' }],
-                ['link', 'video'],
-                ['clean']
-            ];
-            quill = new Quill('#editor', {
-                modules: { toolbar: toolbarOptions },
-                theme: 'snow'
-            });
-
+            const publishToggle = document.getElementById('publish-status');
+            const deleteBtn = document.getElementById('delete-btn');
+            
+            quill = new Quill('#editor', { modules: { toolbar: [ [{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'video'], ['clean'] ]}, theme: 'snow' });
             if (id) {
                 editorTitle.textContent = 'Editar Matéria';
-                const docRef = doc(db, 'articles', id);
-                const docSnap = await getDoc(docRef);
+                deleteBtn.classList.remove('hidden');
+                deleteBtn.addEventListener('click', () => deleteArticle(id));
+
+                const docSnap = await getDoc(doc(db, 'articles', id));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    articleIdField.value = id;
-                    titleField.value = data.title;
+                    articleIdField.value = id; 
+                    titleField.value = data.title; 
                     subtitleField.value = data.subtitle;
-                    imageUrlField.value = data.imageUrl;
+                    imageUrlField.value = data.imageUrl; 
                     authorField.value = data.author || 'Redação';
                     quill.root.innerHTML = data.content;
+                    publishToggle.checked = data.published;
                 }
-            } else {
-                editorTitle.textContent = 'Nova Matéria';
+            } else { 
+                editorTitle.textContent = 'Nova Matéria'; 
+                publishToggle.checked = true;
             }
             form.addEventListener('submit', saveArticle);
         };
@@ -792,20 +836,24 @@
             const password = document.getElementById('password').value;
             const errorElement = document.getElementById('login-error');
             errorElement.textContent = '';
-            
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(auth, email, password);
                 await checkAndSeedDatabase();
                 location.hash = '#/admin/dashboard';
-            } catch (error) {
-                console.error('Login error:', error);
-                errorElement.textContent = 'Email ou senha inválidos.';
-            }
+            } catch (error) { errorElement.textContent = 'Email ou senha inválidos.'; }
         };
 
-        const handleLogout = async () => {
-            await signOut(auth);
-            location.hash = '#/admin';
+        const handleLogout = async () => { await signOut(auth); location.hash = '#/admin'; };
+
+        const handleSaveFeaturedSettings = async (e) => {
+            e.preventDefault();
+            const featuredArticleId = document.getElementById('main-article-select').value;
+            const relatedArticleIds = Array.from(document.querySelectorAll('.related-article-select')).map(select => select.value).filter(Boolean);
+            if (!featuredArticleId) { showToast('Por favor, selecione uma matéria principal.', 'bg-red-500'); return; }
+            try {
+                await setDoc(doc(db, 'settings', 'homepage'), { featuredArticleId, relatedArticleIds });
+                showToast('Destaques da página inicial salvos com sucesso!', 'bg-green-500');
+            } catch (error) { showToast('Ocorreu um erro ao salvar os destaques.', 'bg-red-500'); }
         };
 
         const saveArticle = async (e) => {
@@ -817,55 +865,100 @@
                 imageUrl: document.getElementById('image-url').value,
                 author: document.getElementById('author').value,
                 content: quill.root.innerHTML,
+                published: document.getElementById('publish-status').checked,
                 updatedAt: serverTimestamp(),
             };
-            
             try {
                 if (id) {
                     await updateDoc(doc(db, 'articles', id), articleData);
                     showToast('Matéria atualizada com sucesso!', 'bg-green-500');
                 } else {
                     articleData.createdAt = serverTimestamp();
-                    articleData.published = true;
                     articleData.views = 0;
                     await addDoc(articlesCollection, articleData);
                     showToast('Matéria criada com sucesso!', 'bg-green-500');
                 }
                 location.hash = '#/admin/articles';
+            } catch (error) { showToast('Erro ao salvar matéria.', 'bg-red-500'); }
+        };
+        
+        const saveHomepageOrder = async () => {
+            const mainFeedOrder = Array.from(document.querySelectorAll('#main-feed-list .kanban-card')).map(card => card.dataset.id);
+            const sidebarOrder = Array.from(document.querySelectorAll('#sidebar-list .kanban-card')).map(card => card.dataset.id);
+            
+            try {
+                await setDoc(doc(db, 'settings', 'homepageOrder'), { mainFeedOrder, sidebarOrder });
+                showToast('Ordem da página inicial salva com sucesso!', 'bg-green-500');
+                document.getElementById('save-order-btn').classList.add('hidden');
             } catch (error) {
-                console.error("Erro ao salvar matéria:", error);
-                showToast('Erro ao salvar matéria.', 'bg-red-500');
+                console.error("Erro ao salvar a ordem: ", error);
+                showToast('Erro ao salvar a ordem das matérias.', 'bg-red-500');
             }
         };
 
         const deleteArticle = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'articles', id));
-                showToast('Matéria excluída com sucesso!', 'bg-green-500');
-                router();
-            } catch (error) {
-                console.error("Erro ao excluir matéria:", error);
-                showToast('Erro ao excluir matéria.', 'bg-red-500');
+            if (confirm('Tem certeza que deseja excluir esta matéria? Esta ação não pode ser desfeita.')) {
+                try {
+                    await deleteDoc(doc(db, 'articles', id));
+                    showToast('Matéria excluída com sucesso!', 'bg-green-500');
+                    location.hash = '#/admin/articles';
+                } catch (error) { showToast('Erro ao excluir matéria.', 'bg-red-500'); }
             }
         };
+        
+        const enableKanbanDragAndDrop = () => {
+            const lists = document.querySelectorAll('.kanban-list');
+            let draggedItem = null;
 
-        const togglePublishStatus = async (id, newStatus) => {
-            try {
-                await updateDoc(doc(db, 'articles', id), { published: newStatus });
-                showToast(`Matéria ${newStatus ? 'publicada' : 'ocultada'}.`, 'bg-blue-500');
-            } catch (error) {
-                console.error("Erro ao alterar status:", error);
-                showToast('Erro ao alterar status.', 'bg-red-500');
-            }
+            document.querySelectorAll('.kanban-card').forEach(card => {
+                card.addEventListener('dragstart', () => {
+                    draggedItem = card;
+                    setTimeout(() => card.classList.add('dragging'), 0);
+                    document.getElementById('save-order-btn').classList.remove('hidden');
+                });
+                card.addEventListener('dragend', () => {
+                    if (draggedItem) {
+                        draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                    }
+                });
+            });
+
+            lists.forEach(list => {
+                list.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    list.classList.add('drag-over');
+                    const afterElement = getDragAfterElement(list, e.clientY);
+                    if (draggedItem) {
+                        if (afterElement == null) {
+                            list.appendChild(draggedItem);
+                        } else {
+                            list.insertBefore(draggedItem, afterElement);
+                        }
+                    }
+                });
+                list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
+                list.addEventListener('drop', () => list.classList.remove('drag-over'));
+            });
+            
+             const getDragAfterElement = (container, y) => {
+                const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            };
         };
 
+        // --- CÓDIGO DE SEED E FUNÇÕES UTILITÁRIAS ---
         const checkAndSeedDatabase = async () => {
             const articlesSnapshot = await getDocs(query(articlesCollection, limit(1)));
-            
-            if (!articlesSnapshot.empty) {
-                console.log("Banco de dados já contém matérias. Não será populado.");
-                return;
-            }
+            if (!articlesSnapshot.empty) { return; }
 
             console.log("Populando banco de dados com notícias de exemplo...");
             const sampleArticles = [
@@ -911,7 +1004,7 @@
             ];
 
             const batch = writeBatch(db);
-            sampleArticles.forEach(article => {
+            sampleArticles.forEach((article, index) => {
                 const docRef = doc(articlesCollection);
                 batch.set(docRef, {
                     ...article,
@@ -938,48 +1031,26 @@
             doc.setTextColor(100);
             doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 30);
 
-            const tableData = articles.map(a => [
-                a.title.substring(0, 45) + (a.title.length > 45 ? '...' : ''),
-                a.published ? 'Publicada' : 'Oculta',
-                a.views || 0,
-                formatDate(a.createdAt)
-            ]);
-
-            doc.autoTable({
-                startY: 40,
-                head: [['Título', 'Status', 'Visualizações', 'Data']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [59, 130, 246] }
-            });
-            
+            const tableData = articles.map(a => [a.title.substring(0, 45) + '...', a.published ? 'Publicada' : 'Oculta', a.views || 0, formatDate(a.createdAt)]);
+            doc.autoTable({ startY: 40, head: [['Título', 'Status', 'Visualizações', 'Data']], body: tableData, headStyles: { fillColor: [59, 130, 246] } });
             doc.save('relatorio-materias.pdf');
         };
-
         const copyArticleLink = () => {
             const urlToCopy = window.location.href;
             const textArea = document.createElement("textarea");
             textArea.value = urlToCopy;
-            
             textArea.style.position = "fixed";
-            textArea.style.top = "-9999px";
-            textArea.style.left = "-9999px";
-            
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-            
             try {
                 document.execCommand('copy');
                 showToast('Link copiado para a área de transferência!', 'bg-green-500');
             } catch (err) {
-                console.error('Falha ao copiar o link:', err);
                 showToast('Não foi possível copiar o link.', 'bg-red-500');
             }
-            
             document.body.removeChild(textArea);
         };
-
         const createNewMainArticleHTML = (article, headlines) => {
             const headlinesHTML = headlines.map(h => `
                 <li class="border-t border-gray-200 pt-4 mt-4">
@@ -989,28 +1060,25 @@
                 </li>
             `).join('');
 
-            // AJUSTE: Reordenado os blocos e adicionado classes 'order' para corrigir a visualização mobile.
             return `
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                <!-- Bloco da Imagem: Vem primeiro no código para aparecer no topo no mobile -->
                 <div class="lg:col-span-2 lg:order-2">
                     <a href="#/noticia/${article.id}" class="block">
                         <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover rounded-lg shadow-md min-h-[250px]">
                     </a>
                 </div>
-                <!-- Bloco de Texto: Vem depois, mas é reordenado para a esquerda no desktop -->
                 <div class="lg:col-span-3 lg:order-1">
                     <a href="#/noticia/${article.id}" class="block text-3xl lg:text-5xl font-extrabold text-gray-900 hover:text-blue-600 leading-tight transition-colors">
                         ${article.title}
                     </a>
-                    <p class="mt-3 text-lg text-gray-600">${article.subtitle}</p>
+                    <!-- Subtítulo removido -->
                     <ul class="mt-6">${headlinesHTML}</ul>
                 </div>
             </div>
             `;
         };
-
         const createFeedBlockHTML = (primary, secondary) => {
+            if (!primary) return '';
             let secondaryHTML = '';
             if (secondary) {
                 secondaryHTML = `
@@ -1039,57 +1107,40 @@
                 </div>
             `;
         };
-        
         const createSidebarArticleHTML = (article) => {
+            if (!article) return '';
             return `
-                <a href="#/noticia/${article.id}" class="flex items-center gap-4 group border-t border-gray-200 pt-4">
-                    <div class="w-2/3">
-                        <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${article.title}</h3>
-                    </div>
-                    <div class="w-1/3">
-                        <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-auto object-cover rounded-md aspect-square">
-                    </div>
-                </a>
-            `;
-        };
-
+            <a href="#/noticia/${article.id}" class="flex items-center gap-4 group border-t border-gray-200 pt-4">
+                <div class="w-2/3">
+                    <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${article.title}</h3>
+                </div>
+                <div class="w-1/3">
+                    <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-auto object-cover rounded-md aspect-square">
+                </div>
+            </a>
+        `};
         const formatDate = (timestamp) => {
             if (!timestamp || !timestamp.toDate) return 'Data indisponível';
-            return timestamp.toDate().toLocaleDateString('pt-BR', {
-                day: '2-digit', month: 'long', year: 'numeric'
-            });
+            return timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
         };
-
         let toastTimer;
         const showToast = (message, bgColor = 'bg-gray-800') => {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toast-message');
-            
             clearTimeout(toastTimer);
-            
             toast.className = toast.className.replace(/bg-\w+-\d+/g, '');
             toast.classList.add(bgColor);
             toastMessage.textContent = message;
-
             toast.classList.remove('hidden', 'toast-exit', 'toast-exit-active');
-            toast.classList.add('toast-enter');
-            requestAnimationFrame(() => {
-                toast.classList.add('toast-enter-active');
-            });
-
+            toast.classList.add('toast-enter-active');
             toastTimer = setTimeout(() => {
-                toast.classList.remove('toast-enter', 'toast-enter-active');
-                toast.classList.add('toast-exit');
-                requestAnimationFrame(() => {
-                    toast.classList.add('toast-exit-active');
-                    setTimeout(() => toast.classList.add('hidden'), 300);
-                });
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit-active');
+                setTimeout(() => toast.classList.add('hidden'), 300);
             }, 3000);
         };
-        
         const updateAdminNavActiveState = (hash) => {
-            const navLinks = document.querySelectorAll('#admin-nav a');
-            navLinks.forEach(link => {
+            document.querySelectorAll('#admin-nav a').forEach(link => {
                 if (link.getAttribute('href') === hash) {
                     link.classList.add('bg-blue-100', 'text-blue-700', 'font-semibold');
                 } else {
@@ -1097,14 +1148,10 @@
                 }
             });
         };
-
+        
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('current-year').textContent = new Date().getFullYear();
-            
-            onAuthStateChanged(auth, user => {
-                router();
-            });
-            
+            onAuthStateChanged(auth, user => { router(); });
             window.addEventListener('hashchange', router);
         });
 
