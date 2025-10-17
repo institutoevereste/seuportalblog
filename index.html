@@ -143,15 +143,15 @@
         }
         
         /* Drag and Drop styles */
-        .kanban-card {
+        .draggable {
             cursor: move;
         }
-        .kanban-card.dragging {
+        .dragging {
             opacity: 0.5;
             background: #e0e7ff;
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
-        .kanban-column .drag-over {
+        .drag-over {
             background-color: #eff6ff;
             border: 2px dashed #93c5fd;
         }
@@ -375,33 +375,44 @@
     
     <template id="admin-articles-list-template">
          <div class="bg-white p-8 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold">Organizar Matérias da Home</h1>
-                <div class="flex items-center gap-4">
-                    <button id="save-order-btn" class="bg-green-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center gap-2 hidden">
-                        <i class="fa-solid fa-save"></i> Salvar Ordem
-                    </button>
-                    <a href="#/admin/articles/new" class="bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Nova Matéria
-                    </a>
-                </div>
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <h1 class="text-3xl font-bold">Organizar Página Inicial</h1>
+                <button id="save-order-btn" class="bg-green-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Salvar Organização
+                </button>
             </div>
-            <p class="text-gray-600 mb-6">Arraste as matérias entre as colunas para definir onde elas aparecerão na página inicial. As matérias em "Feed Principal" são as maiores, e as de "Assuntos em Alta" ficam na barra lateral.</p>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Coluna Feed Principal -->
-                <div class="kanban-column">
-                    <h2 class="text-lg font-bold text-center bg-gray-200 p-3 rounded-t-lg">Feed Principal</h2>
-                    <div id="main-feed-list" class="kanban-list bg-gray-50 p-4 rounded-b-lg min-h-[400px] space-y-3 overflow-y-auto max-h-[600px]"></div>
+            <p class="text-gray-600 mb-8">Aqui você define a ordem e o agrupamento das matérias no feed principal e na barra lateral.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Coluna para Blocos do Feed -->
+                <div class="lg:col-span-2">
+                    <div class="flex flex-wrap gap-4 justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Feed Principal (Blocos)</h2>
+                        <button id="add-feed-block-btn" class="bg-blue-500 text-white px-4 py-2 text-sm rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Adicionar Bloco
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4">Cada bloco representa um par de notícias na home: uma principal com imagem e uma secundária (opcional) só com título. Arraste os blocos pela alça <i class="fas fa-grip-vertical"></i> para reordenar.</p>
+                    <div id="feed-blocks-container" class="space-y-4 p-4 bg-gray-50 rounded-lg min-h-[400px]">
+                        <!-- Blocos serão injetados aqui -->
+                    </div>
                 </div>
-                <!-- Coluna Barra Lateral -->
-                 <div class="kanban-column">
-                    <h2 class="text-lg font-bold text-center bg-gray-200 p-3 rounded-t-lg">Assuntos em Alta (Lateral)</h2>
-                    <div id="sidebar-list" class="kanban-list bg-gray-50 p-4 rounded-b-lg min-h-[400px] space-y-3 overflow-y-auto max-h-[600px]"></div>
-                </div>
-                <!-- Coluna Não Atribuídas -->
-                 <div class="kanban-column">
-                    <h2 class="text-lg font-bold text-center bg-gray-200 p-3 rounded-t-lg">Matérias Não Atribuídas</h2>
-                    <div id="unassigned-list" class="kanban-list bg-gray-50 p-4 rounded-b-lg min-h-[400px] space-y-3 overflow-y-auto max-h-[600px]"></div>
+
+                <!-- Coluna para Barra Lateral e Disponíveis -->
+                <div class="lg:col-span-1 space-y-8">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4">Barra Lateral (Assuntos em Alta)</h2>
+                        <div id="sidebar-list" class="drop-zone bg-gray-50 p-4 rounded-lg min-h-[200px] space-y-3">
+                            <!-- Itens da sidebar aqui -->
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold mb-4">Matérias Disponíveis</h2>
+                         <p class="text-sm text-gray-500 mb-4">Arraste uma matéria para a "Barra Lateral". Para usar no feed, selecione dentro de um "Bloco".</p>
+                        <div id="available-articles-list" class="drop-zone bg-gray-100 p-4 rounded-lg min-h-[200px] space-y-3 max-h-[400px] overflow-y-auto no-scrollbar">
+                            <!-- Itens disponíveis aqui -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -506,6 +517,7 @@
             setDoc,
             query,
             orderBy,
+            where,
             limit,
             serverTimestamp,
             writeBatch,
@@ -614,16 +626,25 @@
             const orderSnap = await getDoc(doc(db, 'settings', 'homepageOrder'));
             let mainFeedArticles = [];
             let sidebarArticles = [];
+            const orderSettings = orderSnap.exists() ? orderSnap.data() : {};
 
-            if (orderSnap.exists()) {
-                const orderSettings = orderSnap.data();
-                mainFeedArticles = (orderSettings.mainFeedOrder || []).map(id => allArticles.find(a => a.id === id)).filter(a => a && a.published && !featuredIds.has(a.id));
+            if (orderSettings.mainFeedBlocks?.length > 0 || orderSettings.sidebarOrder?.length > 0) {
+                // Lógica para renderizar blocos
+                const mainFeedBlocks = orderSettings.mainFeedBlocks || [];
+                mainFeedBlocks.forEach(block => {
+                    const primary = allArticles.find(a => a.id === block.primaryId && a.published && !featuredIds.has(a.id));
+                    // Permite bloco secundário vazio
+                    const secondary = block.secondaryId ? allArticles.find(a => a.id === block.secondaryId && a.published && !featuredIds.has(a.id)) : null;
+                    if(primary) mainFeedArticles.push({primary, secondary});
+                });
                 sidebarArticles = (orderSettings.sidebarOrder || []).map(id => allArticles.find(a => a.id === id)).filter(a => a && a.published && !featuredIds.has(a.id));
             } else {
-                // Fallback se a ordem não estiver definida
+                // Fallback se a ordem não estiver definida ou estiver vazia
                 let remainingArticles = allArticles.filter(a => a.published && !featuredIds.has(a.id)).sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                 sidebarArticles = remainingArticles.splice(0, 4);
-                mainFeedArticles = remainingArticles;
+                 while(remainingArticles.length > 0){
+                    mainFeedArticles.push({primary: remainingArticles.shift(), secondary: remainingArticles.shift()});
+                }
             }
 
             // 3. Renderiza o Feed
@@ -634,9 +655,10 @@
             const sidebarColumn = document.createElement('aside');
             sidebarColumn.className = 'lg:col-span-1 space-y-6 self-start lg:sticky lg:top-24';
             
-            while (mainFeedArticles.length > 0) {
-                mainColumn.innerHTML += createFeedBlockHTML(mainFeedArticles.shift(), mainFeedArticles.shift());
-            }
+            mainFeedArticles.forEach(block => {
+                mainColumn.innerHTML += createFeedBlockHTML(block.primary, block.secondary);
+            });
+
             if (sidebarArticles.length > 0) {
                 sidebarColumn.innerHTML += '<h2 class="text-xl font-bold border-b-2 border-blue-500 pb-2">Assuntos em Alta</h2>';
                 sidebarArticles.forEach(article => sidebarColumn.innerHTML += createSidebarArticleHTML(article));
@@ -753,55 +775,94 @@
         const renderAdminArticlesList = async (container) => {
             if (!renderTemplate('admin-articles-list-template', container)) return;
             
-            const articlesSnapshot = await getDocs(articlesCollection);
-            const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const articlesSnapshot = await getDocs(query(articlesCollection, where('published', '==', true)));
+            const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => a.title.localeCompare(b.title));
+            const articlesOptionsHTML = allArticles.map(a => `<option value="${a.id}">${a.title}</option>`).join('');
 
             const orderSnap = await getDoc(doc(db, 'settings', 'homepageOrder'));
-            const mainFeedOrder = orderSnap.exists() ? orderSnap.data().mainFeedOrder || [] : [];
-            const sidebarOrder = orderSnap.exists() ? orderSnap.data().sidebarOrder || [] : [];
+            const savedSettings = orderSnap.exists() ? orderSnap.data() : { mainFeedBlocks: [], sidebarOrder: [] };
             
-            const assignedIds = new Set([...mainFeedOrder, ...sidebarOrder]);
-
-            const mainFeedList = document.getElementById('main-feed-list');
-            const sidebarList = document.getElementById('sidebar-list');
-            const unassignedList = document.getElementById('unassigned-list');
-
-            mainFeedList.innerHTML = '';
-            sidebarList.innerHTML = '';
-            unassignedList.innerHTML = '';
-
-            const createArticleCard = (article) => {
-                return `
-                <div class="kanban-card bg-white p-3 rounded-lg shadow border flex justify-between items-center" draggable="true" data-id="${article.id}">
-                    <span class="font-medium text-sm">${article.title}</span>
-                    <div class="flex items-center gap-2 text-gray-400">
-                        <a href="#/admin/articles/${article.id}" class="hover:text-blue-600" title="Editar"><i class="fas fa-edit"></i></a>
-                        <i class="fas fa-grip-vertical"></i>
+            const feedBlocksContainer = document.getElementById('feed-blocks-container');
+            feedBlocksContainer.innerHTML = '';
+            
+            const createAdminFeedBlockHTML = (block = {}) => {
+                const primaryId = block.primaryId || '';
+                const secondaryId = block.secondaryId || '';
+                const div = document.createElement('div');
+                div.className = 'feed-block draggable bg-white p-4 rounded-lg shadow border';
+                div.setAttribute('draggable', 'true');
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold text-gray-500 flex items-center gap-2"><i class="fas fa-grip-vertical cursor-move"></i> Bloco de Notícia</span>
+                        <button class="remove-block-btn text-red-500 hover:text-red-700" title="Remover Bloco"><i class="fas fa-trash"></i></button>
                     </div>
-                </div>`;
+                    <div class="space-y-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600">Principal (com imagem):</label>
+                            <select class="primary-article-select w-full p-2 border border-gray-300 rounded-md text-sm">
+                                <option value="">-- Selecione a matéria principal --</option>
+                                ${articlesOptionsHTML}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600">Secundária (só título):</label>
+                            <select class="secondary-article-select w-full p-2 border border-gray-300 rounded-md text-sm">
+                                <option value="">-- Nenhuma (opcional) --</option>
+                                ${articlesOptionsHTML}
+                            </select>
+                        </div>
+                    </div>
+                `;
+                div.querySelector('.primary-article-select').value = primaryId;
+                div.querySelector('.secondary-article-select').value = secondaryId;
+                div.querySelector('.remove-block-btn').addEventListener('click', () => div.remove());
+                return div;
+            };
+            
+            (savedSettings.mainFeedBlocks || []).forEach(block => feedBlocksContainer.appendChild(createAdminFeedBlockHTML(block)));
+
+            document.getElementById('add-feed-block-btn').addEventListener('click', () => {
+                feedBlocksContainer.appendChild(createAdminFeedBlockHTML());
+            });
+
+            // Populate sidebar and available lists
+            const sidebarList = document.getElementById('sidebar-list');
+            const availableList = document.getElementById('available-articles-list');
+            sidebarList.innerHTML = '';
+            availableList.innerHTML = '';
+
+            const usedInBlocks = new Set((savedSettings.mainFeedBlocks || []).flatMap(b => [b.primaryId, b.secondaryId]).filter(Boolean));
+            const usedInSidebar = new Set(savedSettings.sidebarOrder || []);
+            
+            const createArticleItemHTML = (article) => {
+                const div = document.createElement('div');
+                div.className = 'draggable bg-white p-3 rounded-lg shadow border flex justify-between items-center';
+                div.setAttribute('draggable', 'true');
+                div.dataset.id = article.id;
+                div.innerHTML = `<span class="font-medium text-sm">${article.title}</span><i class="fas fa-grip-vertical text-gray-400"></i>`;
+                return div;
             };
 
-            mainFeedOrder.forEach(id => {
+            (savedSettings.sidebarOrder || []).forEach(id => {
                 const article = allArticles.find(a => a.id === id);
-                if (article) mainFeedList.innerHTML += createArticleCard(article);
+                if (article) sidebarList.appendChild(createArticleItemHTML(article));
             });
-            sidebarOrder.forEach(id => {
-                const article = allArticles.find(a => a.id === id);
-                if (article) sidebarList.innerHTML += createArticleCard(article);
-            });
+
             allArticles.forEach(article => {
-                if (!assignedIds.has(article.id)) unassignedList.innerHTML += createArticleCard(article);
+                if (!usedInBlocks.has(article.id) && !usedInSidebar.has(article.id)) {
+                    availableList.appendChild(createArticleItemHTML(article));
+                }
             });
-            
+
             document.getElementById('save-order-btn').addEventListener('click', saveHomepageOrder);
-            enableKanbanDragAndDrop();
+            enableDragAndDropManager();
         };
 
         const renderFeaturedSettingsPage = async (container) => {
             if (!renderTemplate('admin-featured-settings-template', container)) return;
-            const articlesSnapshot = await getDocs(articlesCollection);
+            const articlesSnapshot = await getDocs(query(articlesCollection, where('published', '==', true)));
             const allArticles = articlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(a => a.published).sort((a, b) => a.title.localeCompare(b.title));
+                .sort((a, b) => a.title.localeCompare(b.title));
             const optionsHTML = allArticles.map(a => `<option value="${a.id}">${a.title}</option>`).join('');
             const mainSelect = document.getElementById('main-article-select');
             mainSelect.innerHTML = `<option value="">-- Selecione uma matéria --</option>${optionsHTML}`;
@@ -915,16 +976,33 @@
         };
         
         const saveHomepageOrder = async () => {
-            const mainFeedOrder = Array.from(document.querySelectorAll('#main-feed-list .kanban-card')).map(card => card.dataset.id);
-            const sidebarOrder = Array.from(document.querySelectorAll('#sidebar-list .kanban-card')).map(card => card.dataset.id);
-            
+            const mainFeedBlocks = Array.from(document.querySelectorAll('#feed-blocks-container .feed-block')).map(block => {
+                return {
+                    primaryId: block.querySelector('.primary-article-select').value,
+                    secondaryId: block.querySelector('.secondary-article-select').value || null
+                }
+            }).filter(b => b.primaryId); // Só salva blocos que têm uma matéria principal
+
+            const sidebarOrder = Array.from(document.querySelectorAll('#sidebar-list .draggable')).map(card => card.dataset.id);
+
+            // Validação
+            const allUsedIds = [...sidebarOrder];
+            mainFeedBlocks.forEach(b => {
+                if (b.primaryId) allUsedIds.push(b.primaryId);
+                if (b.secondaryId) allUsedIds.push(b.secondaryId);
+            });
+            const hasDuplicates = new Set(allUsedIds).size !== allUsedIds.length;
+            if(hasDuplicates) {
+                showToast('Erro: Uma matéria não pode ser usada em mais de um lugar.', 'bg-red-500');
+                return;
+            }
+
             try {
-                await setDoc(doc(db, 'settings', 'homepageOrder'), { mainFeedOrder, sidebarOrder });
-                showToast('Ordem da página inicial salva com sucesso!', 'bg-green-500');
-                document.getElementById('save-order-btn').classList.add('hidden');
+                await setDoc(doc(db, 'settings', 'homepageOrder'), { mainFeedBlocks, sidebarOrder });
+                showToast('Organização da página inicial salva com sucesso!', 'bg-green-500');
             } catch (error) {
                 console.error("Erro ao salvar a ordem: ", error);
-                showToast('Erro ao salvar a ordem das matérias.', 'bg-red-500');
+                showToast('Erro ao salvar a organização.', 'bg-red-500');
             }
         };
 
@@ -938,17 +1016,16 @@
             }
         };
         
-        const enableKanbanDragAndDrop = () => {
-            const lists = document.querySelectorAll('.kanban-list');
+        const enableDragAndDropManager = () => {
             let draggedItem = null;
+            const containers = document.querySelectorAll('.drop-zone, #feed-blocks-container');
 
-            document.querySelectorAll('.kanban-card').forEach(card => {
-                card.addEventListener('dragstart', () => {
-                    draggedItem = card;
-                    setTimeout(() => card.classList.add('dragging'), 0);
-                    document.getElementById('save-order-btn').classList.remove('hidden');
+            document.querySelectorAll('.draggable').forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target.closest('.draggable');
+                    setTimeout(() => draggedItem.classList.add('dragging'), 0);
                 });
-                card.addEventListener('dragend', () => {
+                item.addEventListener('dragend', () => {
                     if (draggedItem) {
                         draggedItem.classList.remove('dragging');
                         draggedItem = null;
@@ -956,25 +1033,28 @@
                 });
             });
 
-            lists.forEach(list => {
-                list.addEventListener('dragover', e => {
+            containers.forEach(container => {
+                container.addEventListener('dragover', e => {
                     e.preventDefault();
-                    list.classList.add('drag-over');
-                    const afterElement = getDragAfterElement(list, e.clientY);
+                    container.classList.add('drag-over');
+                    const afterElement = getDragAfterElement(container, e.clientY);
                     if (draggedItem) {
                         if (afterElement == null) {
-                            list.appendChild(draggedItem);
+                            container.appendChild(draggedItem);
                         } else {
-                            list.insertBefore(draggedItem, afterElement);
+                            container.insertBefore(draggedItem, afterElement);
                         }
                     }
                 });
-                list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
-                list.addEventListener('drop', () => list.classList.remove('drag-over'));
+                container.addEventListener('dragleave', () => container.classList.remove('drag-over'));
+                container.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    container.classList.remove('drag-over');
+                });
             });
-            
-             const getDragAfterElement = (container, y) => {
-                const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
+
+            const getDragAfterElement = (container, y) => {
+                const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
                 return draggableElements.reduce((closest, child) => {
                     const box = child.getBoundingClientRect();
                     const offset = y - box.top - box.height / 2;
