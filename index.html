@@ -488,11 +488,9 @@
         const renderHomePage = async () => {
             if (!renderTemplate('home-template', appRoot)) return;
             
-            // FIX: Removed orderBy from query to prevent permission errors without indexes.
             const snapshot = await getDocs(articlesCollection);
             let allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Sort articles by date in JavaScript
             allArticles.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
             let articles = allArticles.filter(article => article.published);
@@ -504,26 +502,22 @@
 
             const mainBlockPlaceholder = document.getElementById('main-block-placeholder');
             const feedContainer = document.getElementById('feed-container-placeholder');
-            feedContainer.innerHTML = ''; // Limpa conteúdo anterior
+            feedContainer.innerHTML = '';
 
-            // --- Bloco Principal (Estilo G1) ---
             const mainArticle = articles.shift();
             const secondaryHeadlines = articles.splice(0, 5);
             if (mainArticle) {
                 mainBlockPlaceholder.innerHTML = createNewMainArticleHTML(mainArticle, secondaryHeadlines);
             }
 
-            // --- Colunas do Feed ---
             const mainColumn = document.createElement('div');
             mainColumn.className = 'lg:col-span-2 space-y-8';
 
             const sidebarColumn = document.createElement('aside');
             sidebarColumn.className = 'lg:col-span-1 space-y-6 self-start lg:sticky lg:top-24';
             
-            // --- Artigos para a Barra Lateral ---
             const sidebarArticles = articles.splice(0, 4); 
 
-            // --- Feed Contínuo (coluna principal) ---
             while (articles.length > 0) {
                 const primary = articles.shift();
                 const secondary = articles.shift(); 
@@ -531,7 +525,6 @@
                 mainColumn.innerHTML += feedBlock;
             }
 
-            // --- Barra Lateral ("Assuntos em Alta") ---
             if (sidebarArticles.length > 0) {
                 sidebarColumn.innerHTML += '<h2 class="text-xl font-bold border-b-2 border-blue-500 pb-2">Assuntos em Alta</h2>';
                 sidebarArticles.forEach(article => {
@@ -586,11 +579,9 @@
         };
 
         const renderMostReadList = async (currentArticleId) => {
-            // FIX: Removed orderBy from query to prevent permission errors.
             const snapshot = await getDocs(articlesCollection);
             let allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Sort by views and filter in JavaScript
             const mostRead = allArticles
                 .sort((a, b) => (b.views || 0) - (a.views || 0))
                 .filter(article => article.id !== currentArticleId && article.published)
@@ -998,19 +989,22 @@
                 </li>
             `).join('');
 
+            // AJUSTE: Reordenado os blocos e adicionado classes 'order' para corrigir a visualização mobile.
             return `
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                <div class="lg:col-span-3">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                <!-- Bloco da Imagem: Vem primeiro no código para aparecer no topo no mobile -->
+                <div class="lg:col-span-2 lg:order-2">
+                    <a href="#/noticia/${article.id}" class="block">
+                        <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover rounded-lg shadow-md min-h-[250px]">
+                    </a>
+                </div>
+                <!-- Bloco de Texto: Vem depois, mas é reordenado para a esquerda no desktop -->
+                <div class="lg:col-span-3 lg:order-1">
                     <a href="#/noticia/${article.id}" class="block text-3xl lg:text-5xl font-extrabold text-gray-900 hover:text-blue-600 leading-tight transition-colors">
                         ${article.title}
                     </a>
                     <p class="mt-3 text-lg text-gray-600">${article.subtitle}</p>
                     <ul class="mt-6">${headlinesHTML}</ul>
-                </div>
-                <div class="lg:col-span-2">
-                    <a href="#/noticia/${article.id}" class="block">
-                        <img src="${article.imageUrl}" alt="${article.title}" class="w-full h-full object-cover rounded-lg shadow-md min-h-[250px]">
-                    </a>
                 </div>
             </div>
             `;
